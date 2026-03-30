@@ -35,6 +35,7 @@ async Task<int> RunServeAsync()
 
     var builder = Host.CreateApplicationBuilder(Array.Empty<string>());
 
+    builder.Logging.ClearProviders();
     builder.Logging.AddConsole(options =>
     {
         options.LogToStandardErrorThreshold = LogLevel.Trace;
