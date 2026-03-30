@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.2.0 (2026-03-30)
+
+- **Auto-config from PasswordVault** — `serve` mode auto-generates `runner.json` by scanning Windows PasswordVault for known provider API keys when no presets are configured
+- **API key lookup fix** — resolve API keys by provider type (matching AssistStudio's storage format) instead of preset name
+- **Preset resolution fallback** — `ResolvePreset` now falls back to matching by provider type when exact preset name match fails
+- **TFM upgrade** — `net8.0` → `net8.0-windows10.0.19041.0` for native UWP PasswordVault API access
+
 ## v0.1.0 (2026-03-30)
 
 Initial release.

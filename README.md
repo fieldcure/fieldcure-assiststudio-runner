@@ -42,26 +42,30 @@ dotnet build
 
 ## Configuration
 
-### Initial Setup
+### Auto-configuration (recommended)
+
+When launched in `serve` mode with no `runner.json`, Runner automatically scans Windows PasswordVault for known provider API keys and generates the config file. If you use AssistStudio, API keys are already stored — no manual setup needed.
+
+### Manual Setup
 
 ```bash
 # Create runner.json config template
 assiststudio-runner config init
 
 # Set API key for a provider preset
-assiststudio-runner config set-credential "Claude Sonnet" sk-ant-api03-...
+assiststudio-runner config set-credential "Claude" sk-ant-api03-...
 
 # Verify (displays masked value)
-assiststudio-runner config get-credential "Claude Sonnet"
+assiststudio-runner config get-credential "Claude"
 ```
 
 The config file is created at `%LOCALAPPDATA%/FieldCure/AssistStudio/Runner/runner.json`:
 
 ```json
 {
-  "defaultPresetName": "Claude Sonnet",
+  "defaultPresetName": "Claude",
   "presets": {
-    "Claude Sonnet": {
+    "Claude": {
       "providerType": "Claude",
       "modelId": "claude-sonnet-4-20250514"
     }
