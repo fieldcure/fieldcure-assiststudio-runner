@@ -2,7 +2,7 @@ using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FieldCure.AssistStudio.Models;
-using Windows.Security.Credentials;
+using FieldCure.AssistStudio.Runner.Credentials;
 
 namespace FieldCure.AssistStudio.Runner.Models;
 
@@ -113,28 +113,15 @@ public sealed class RunnerConfig
     ];
 
     /// <summary>
-    /// Builds a config by scanning PasswordVault for known provider API keys.
+    /// Builds a config by scanning Windows Credential Manager for known provider API keys.
     /// Creates presets for each provider with a stored key, plus Ollama (no key required).
     /// </summary>
     [SupportedOSPlatform("windows")]
     public static RunnerConfig BuildFromVault()
     {
         var config = new RunnerConfig();
-
-        PasswordVault vault;
-        IReadOnlyList<PasswordCredential> credentials;
-        try
-        {
-            vault = new PasswordVault();
-            credentials = vault.FindAllByResource("FieldCure.AssistStudio");
-        }
-        catch
-        {
-            // No credentials stored at all
-            return config;
-        }
-
-        var userNames = new HashSet<string>(credentials.Select(c => c.UserName));
+        var credService = new CredentialService();
+        var userNames = new HashSet<string>(credService.EnumerateUserNames());
 
         foreach (var (type, model) in KnownProviders)
         {

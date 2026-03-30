@@ -44,7 +44,7 @@ dotnet build
 
 ### Auto-configuration (recommended)
 
-When launched in `serve` mode with no `runner.json`, Runner automatically scans Windows PasswordVault for known provider API keys and generates the config file. If you use AssistStudio, API keys are already stored — no manual setup needed.
+When launched in `serve` mode with no `runner.json`, Runner automatically scans Windows Credential Manager for known provider API keys and generates the config file. If you use AssistStudio, API keys are already stored — no manual setup needed.
 
 ### Manual Setup
 

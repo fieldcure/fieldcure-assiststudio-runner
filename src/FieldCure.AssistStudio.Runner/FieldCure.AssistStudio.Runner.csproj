@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>FieldCure.AssistStudio.Runner</RootNamespace>
     <AssemblyName>assiststudio-runner</AssemblyName>
@@ -35,7 +35,7 @@
 
   <ItemGroup>
     <PackageReference Include="FieldCure.AssistStudio.Core" Version="0.12.0" />
-    <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
+<PackageReference Include="ModelContextProtocol" Version="1.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.*" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
   </ItemGroup>
