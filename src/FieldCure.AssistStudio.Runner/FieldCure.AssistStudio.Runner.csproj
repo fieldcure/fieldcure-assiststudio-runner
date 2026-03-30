@@ -23,6 +23,7 @@
     <PackageTags>mcp;llm;automation;scheduler;runner;assiststudio</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
+    <PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\RELEASENOTES.md'))</PackageReleaseNotes>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>assiststudio-runner</ToolCommandName>
