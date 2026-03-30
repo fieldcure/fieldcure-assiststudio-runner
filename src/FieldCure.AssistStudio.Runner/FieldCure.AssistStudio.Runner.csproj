@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>FieldCure.AssistStudio.Runner</RootNamespace>
+    <AssemblyName>assiststudio-runner</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <Version>0.1.0</Version>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <PackageId>FieldCure.AssistStudio.Runner</PackageId>
+
+    <Authors>Jong Hyun Kim</Authors>
+    <Company>Fieldcure Co., Ltd.</Company>
+    <Copyright>Copyright (c) 2026 Fieldcure Co., Ltd.</Copyright>
+    <Description>Headless LLM task automation engine with scheduling. Executes natural language tasks on schedule via Windows Task Scheduler and sends results through configured channels.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/fieldcure/fieldcure-assiststudio-runner</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fieldcure/fieldcure-assiststudio-runner</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>mcp;llm;automation;scheduler;runner;assiststudio</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>Logo.png</PackageIcon>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>assiststudio-runner</ToolCommandName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FieldCure.AssistStudio.Runner.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FieldCure.AssistStudio.Core" Version="0.12.0" />
+    <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.*" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="Logo.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+</Project>

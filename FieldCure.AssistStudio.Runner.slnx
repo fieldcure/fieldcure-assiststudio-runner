@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/FieldCure.AssistStudio.Runner/FieldCure.AssistStudio.Runner.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FieldCure.AssistStudio.Runner.Tests/FieldCure.AssistStudio.Runner.Tests.csproj" />
+  </Folder>
+</Solution>

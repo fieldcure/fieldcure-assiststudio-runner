@@ -1,1 +1,221 @@
-# fieldcure.mcp.scheduler
+# AssistStudio Runner
+
+[![NuGet](https://img.shields.io/nuget/v/FieldCure.AssistStudio.Runner)](https://www.nuget.org/packages/FieldCure.AssistStudio.Runner)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/fieldcure/fieldcure-assiststudio-runner/blob/main/LICENSE)
+
+A headless LLM task automation engine that executes natural language tasks on schedule and delivers results through configured channels. Built as a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server with the official [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk).
+
+## Features
+
+- **Dual-mode operation** — MCP server (`serve`) for task management, headless CLI (`exec`) for scheduled execution
+- **7 MCP tools** — `create_task`, `update_task`, `delete_task`, `list_tasks`, `run_task`, `get_task_history`, `get_execution_status`
+- **Windows Task Scheduler integration** — cron expressions automatically mapped to `schtasks` entries
+- **Multi-provider LLM support** — Claude, OpenAI, Gemini, Ollama, Groq via [AssistStudio.Core](https://www.nuget.org/packages/FieldCure.AssistStudio.Core)
+- **MCP server orchestration** — tasks can bootstrap any MCP servers (Outbox, RAG, Filesystem, custom)
+- **Safety-first tool control** — `AllowedTools` null = no tools; explicit allowlist required for headless execution
+- **Secure credentials** — API keys in Windows Credential Manager (DPAPI), shared with AssistStudio
+- **Execution logging** — DB summary + detailed JSON logs with full conversation history
+- **Result delivery** — send results via Outbox channels (Slack, Telegram, Email, KakaoTalk)
+
+## Installation
+
+### dotnet tool (recommended)
+
+```bash
+dotnet tool install -g FieldCure.AssistStudio.Runner
+```
+
+After installation, the `assiststudio-runner` command is available globally.
+
+### From source
+
+```bash
+git clone https://github.com/fieldcure/fieldcure-assiststudio-runner.git
+cd fieldcure-assiststudio-runner
+dotnet build
+```
+
+## Requirements
+
+- [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+- Windows (required for Task Scheduler and Credential Manager)
+
+## Configuration
+
+### Initial Setup
+
+```bash
+# Create runner.json config template
+assiststudio-runner config init
+
+# Set API key for a provider preset
+assiststudio-runner config set-credential "Claude Sonnet" sk-ant-api03-...
+
+# Verify (displays masked value)
+assiststudio-runner config get-credential "Claude Sonnet"
+```
+
+The config file is created at `%LOCALAPPDATA%/FieldCure/AssistStudio/Runner/runner.json`:
+
+```json
+{
+  "defaultPresetName": "Claude Sonnet",
+  "presets": {
+    "Claude Sonnet": {
+      "providerType": "Claude",
+      "modelId": "claude-sonnet-4-20250514"
+    }
+  },
+  "fallbackChannel": "runner-alerts",
+  "logRetentionDays": 30
+}
+```
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "runner": {
+      "command": "assiststudio-runner",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+### VS Code (Copilot)
+
+Add to `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "runner": {
+      "command": "assiststudio-runner",
+      "args": ["serve"]
+    }
+  }
+}
+```
+
+### From source (without dotnet tool)
+
+```json
+{
+  "mcpServers": {
+    "runner": {
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project", "C:\\path\\to\\fieldcure-assiststudio-runner\\src\\FieldCure.AssistStudio.Runner",
+        "--", "serve"
+      ]
+    }
+  }
+}
+```
+
+## Tools
+
+| Tool | Description | Confirmation |
+|------|-------------|:------------:|
+| `create_task` | Create a task with prompt, schedule, and MCP server config | Required |
+| `update_task` | Modify task fields — partial update, only changed fields | Required |
+| `delete_task` | Delete a task, its executions, and log files | Required |
+| `list_tasks` | List tasks with filtering and last execution status | — |
+| `run_task` | Start execution (async default, optional 60s wait) | Required |
+| `get_task_history` | Query execution history with status filtering | — |
+| `get_execution_status` | Check real-time status of an execution | — |
+
+## Usage
+
+### Conversation Example
+
+```
+User: "매일 아침 9시에 경쟁사 뉴스 요약해서 Slack으로 보내줘"
+  LLM → create_task (schedule: "0 9 * * 1-5", mcp_servers: [outbox, rag])
+
+User: "한번 테스트해봐"
+  LLM → run_task (wait: true) → 결과 보고
+
+User: "주말은 빼줘"
+  LLM → update_task (schedule: "0 9 * * 1-5")
+
+User: "어제 결과는?"
+  LLM → get_task_history (limit: 1)
+```
+
+### Execution Modes
+
+| Mode | Command | Purpose |
+|------|---------|---------|
+| **Serve** | `assiststudio-runner serve` | MCP server (stdio) for task management |
+| **Exec** | `assiststudio-runner exec <task-id>` | Headless execution (called by schtasks) |
+| **Config** | `assiststudio-runner config init` | Create config template |
+| | `assiststudio-runner config set-credential <key> <value>` | Store API key or env var |
+| | `assiststudio-runner config get-credential <key>` | Retrieve credential (masked) |
+
+### Exit Codes (exec mode)
+
+| Code | Meaning |
+|------|---------|
+| `0` | Succeeded |
+| `1` | Failed |
+| `2` | Timed out |
+| `3` | Task not found |
+| `4` | Already running |
+
+## Scheduling
+
+Cron expressions are automatically mapped to Windows Task Scheduler entries:
+
+| Cron | Schedule | schtasks |
+|------|----------|----------|
+| `*/30 * * * *` | Every 30 minutes | `/SC MINUTE /MO 30` |
+| `0 */2 * * *` | Every 2 hours | `/SC HOURLY /MO 2` |
+| `0 9 * * *` | Daily at 9:00 AM | `/SC DAILY /ST 09:00` |
+| `0 9 * * 1-5` | Weekdays at 9:00 AM | `/SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 09:00` |
+| `0 9 1 * *` | Monthly on the 1st | `/SC MONTHLY /D 1 /ST 09:00` |
+
+## Data Storage
+
+| Data | Location |
+|------|----------|
+| Configuration | `%LOCALAPPDATA%/FieldCure/AssistStudio/Runner/runner.json` |
+| Task database | `%LOCALAPPDATA%/FieldCure/AssistStudio/Runner/runner.db` (SQLite, WAL) |
+| Execution logs | `%LOCALAPPDATA%/FieldCure/AssistStudio/Runner/logs/{id}.json` |
+| API keys | Windows Credential Manager (`FieldCure.AssistStudio`) |
+
+## Project Structure
+
+```
+src/FieldCure.AssistStudio.Runner/
+├── Program.cs                    # Dual-mode entry point (serve/exec/config)
+├── Models/                       # RunnerTask, TaskExecution, RunnerConfig, ExecutionLog
+├── Storage/TaskStore.cs          # SQLite storage with WAL mode
+├── Credentials/                  # ICredentialService + Windows PasswordVault
+├── Scheduling/                   # CronToSchtasks parser, SchedulerService (schtasks)
+├── Execution/                    # TaskExecutor (6-phase pipeline), McpServerPool
+├── Tools/                        # 7 MCP tools for serve mode
+└── Configuration/ConfigRunner.cs # CLI config subcommands
+```
+
+## Development
+
+```bash
+# Build
+dotnet build
+
+# Test
+dotnet test
+
+# Pack
+dotnet pack -c Release
+```
+
+## License
+
+[MIT](LICENSE)
