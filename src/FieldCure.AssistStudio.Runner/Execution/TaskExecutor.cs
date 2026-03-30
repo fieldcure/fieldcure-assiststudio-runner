@@ -87,8 +87,8 @@ public sealed class TaskExecutor
             var preset = _globalConfig.ResolvePreset(presetName)
                 ?? throw new InvalidOperationException($"Preset '{presetName}' not found in runner.json.");
 
-            preset.ApiKey = _credentialService.GetApiKey(presetName)
-                ?? throw new InvalidOperationException($"API key for preset '{presetName}' not found in PasswordVault.");
+            preset.ApiKey = _credentialService.GetApiKey(preset.ProviderType)
+                ?? throw new InvalidOperationException($"API key for provider '{preset.ProviderType}' not found in PasswordVault.");
 
             var provider = ProviderFactory.Create(preset);
             _logger.LogDebug("Using provider {Provider} model {Model}", preset.ProviderType, preset.ModelId);

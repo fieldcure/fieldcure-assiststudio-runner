@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>FieldCure.AssistStudio.Runner</RootNamespace>
     <AssemblyName>assiststudio-runner</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
 

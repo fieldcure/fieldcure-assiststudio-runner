@@ -31,6 +31,14 @@ return await RunServeAsync();
 async Task<int> RunServeAsync()
 {
     var config = RunnerConfig.Load();
+
+    // Auto-init: build runner.json from PasswordVault if no presets configured
+    if (config.Presets.Count == 0)
+    {
+        config = RunnerConfig.BuildFromVault();
+        config.Save();
+    }
+
     var dataDir = config.GetEffectiveDataDirectory();
 
     var builder = Host.CreateApplicationBuilder(Array.Empty<string>());

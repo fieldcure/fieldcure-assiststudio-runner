@@ -19,34 +19,73 @@ public static class ConfigRunner
 
         return args[0].ToLowerInvariant() switch
         {
-            "init" => RunInit(),
+            "init" => RunInit(args[1..]),
             "set-credential" => RunSetCredential(args[1..]),
             "get-credential" => RunGetCredential(args[1..]),
             _ => PrintUsage(),
         };
     }
 
-    static int RunInit()
+    /// <summary>
+    /// Creates runner.json with optional preset configuration.
+    /// <code>
+    /// assiststudio-runner config init [--preset Name --provider Type --model Id] [--if-missing]
+    /// </code>
+    /// </summary>
+    static int RunInit(string[] args)
     {
-        var config = new RunnerConfig
+        var parsed = ParseArgs(args, "preset", "provider", "model", "if-missing");
+        var presetName = parsed.GetValueOrDefault("preset");
+        var providerType = parsed.GetValueOrDefault("provider");
+        var modelId = parsed.GetValueOrDefault("model");
+        var ifMissing = parsed.ContainsKey("if-missing");
+
+        var configPath = Path.Combine(RunnerConfig.GetDefaultDataDirectory(), "runner.json");
+
+        // --if-missing: skip if runner.json already exists
+        if (ifMissing && File.Exists(configPath))
         {
-            DefaultPresetName = "Claude Sonnet",
-            Presets = new()
+            Console.Error.WriteLine($"Exists: {configPath} (skipped)");
+            return 0;
+        }
+
+        RunnerConfig config;
+
+        if (!string.IsNullOrEmpty(presetName) && !string.IsNullOrEmpty(providerType))
+        {
+            // Create config from provided preset info
+            config = new RunnerConfig
             {
-                ["Claude Sonnet"] = new PresetConfig
+                DefaultPresetName = presetName,
+                Presets = new()
                 {
-                    ProviderType = "Claude",
-                    ModelId = "claude-sonnet-4-20250514",
-                }
-            },
-            FallbackChannel = "runner-alerts",
-        };
+                    [presetName] = new PresetConfig
+                    {
+                        ProviderType = providerType,
+                        ModelId = modelId,
+                    }
+                },
+            };
+        }
+        else
+        {
+            // Default template
+            config = new RunnerConfig
+            {
+                DefaultPresetName = "Claude",
+                Presets = new()
+                {
+                    ["Claude"] = new PresetConfig
+                    {
+                        ProviderType = "Claude",
+                        ModelId = "claude-sonnet-4-20250514",
+                    }
+                },
+            };
+        }
 
         config.Save();
-        var path = Path.Combine(config.GetEffectiveDataDirectory(), "runner.json");
-        Console.Error.WriteLine($"Created: {path}");
-        Console.Error.WriteLine("Next: set your API key with:");
-        Console.Error.WriteLine("  assiststudio-runner config set-credential \"Claude Sonnet\" <your-api-key>");
+        Console.Error.WriteLine($"Created: {configPath}");
         return 0;
     }
 
@@ -127,9 +166,40 @@ public static class ConfigRunner
     static int PrintUsage()
     {
         Console.Error.WriteLine("Usage:");
-        Console.Error.WriteLine("  assiststudio-runner config init                        Create runner.json template");
-        Console.Error.WriteLine("  assiststudio-runner config set-credential <key> <val>  Store a credential");
-        Console.Error.WriteLine("  assiststudio-runner config get-credential <key>        Retrieve a credential (masked)");
+        Console.Error.WriteLine("  assiststudio-runner config init [options]               Create runner.json");
+        Console.Error.WriteLine("    --preset <name>        Preset name (e.g., \"Claude\")");
+        Console.Error.WriteLine("    --provider <type>      Provider type (Claude, OpenAI, Gemini, Groq, Ollama)");
+        Console.Error.WriteLine("    --model <id>           Model identifier");
+        Console.Error.WriteLine("    --if-missing           Skip if runner.json already exists");
+        Console.Error.WriteLine("  assiststudio-runner config set-credential <key> <val>   Store a credential");
+        Console.Error.WriteLine("  assiststudio-runner config get-credential <key>         Retrieve a credential (masked)");
         return 1;
+    }
+
+    /// <summary>
+    /// Simple argument parser for --key value pairs and --flag switches.
+    /// </summary>
+    static Dictionary<string, string> ParseArgs(string[] args, params string[] knownKeys)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (!args[i].StartsWith("--")) continue;
+
+            var key = args[i][2..];
+            if (knownKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                // Check if it's a flag (no value) or key-value pair
+                if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
+                {
+                    result[key] = args[++i];
+                }
+                else
+                {
+                    result[key] = "true"; // flag
+                }
+            }
+        }
+        return result;
     }
 }

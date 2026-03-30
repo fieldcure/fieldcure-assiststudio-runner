@@ -1,6 +1,8 @@
+using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FieldCure.AssistStudio.Models;
+using Windows.Security.Credentials;
 
 namespace FieldCure.AssistStudio.Runner.Models;
 
@@ -39,22 +41,34 @@ public sealed class RunnerConfig
 
     /// <summary>
     /// Resolves a preset name to a <see cref="ProviderPreset"/> instance.
+    /// Falls back to matching by provider type if exact name match fails.
     /// </summary>
     public ProviderPreset? ResolvePreset(string? presetName)
     {
         if (presetName is null) return null;
-        if (!Presets.TryGetValue(presetName, out var config)) return null;
 
-        return new ProviderPreset
-        {
-            Name = presetName,
-            ProviderType = config.ProviderType,
-            ModelId = config.ModelId ?? "",
-            BaseUrl = config.BaseUrl,
-            Temperature = config.Temperature,
-            MaxTokens = config.MaxTokens,
-        };
+        // 1. Exact match by preset name
+        if (Presets.TryGetValue(presetName, out var config))
+            return ToPreset(presetName, config);
+
+        // 2. Fallback: match by providerType (e.g., "Claude" matches a preset with ProviderType="Claude")
+        var byType = Presets.FirstOrDefault(p =>
+            p.Value.ProviderType.Equals(presetName, StringComparison.OrdinalIgnoreCase));
+        if (byType.Value is not null)
+            return ToPreset(byType.Key, byType.Value);
+
+        return null;
     }
+
+    static ProviderPreset ToPreset(string name, PresetConfig config) => new()
+    {
+        Name = name,
+        ProviderType = config.ProviderType,
+        ModelId = config.ModelId ?? "",
+        BaseUrl = config.BaseUrl,
+        Temperature = config.Temperature,
+        MaxTokens = config.MaxTokens,
+    };
 
     /// <summary>
     /// Returns the default data directory path.
@@ -85,6 +99,65 @@ public sealed class RunnerConfig
 
         var json = File.ReadAllText(path);
         return JsonSerializer.Deserialize<RunnerConfig>(json, JsonOptions) ?? new RunnerConfig();
+    }
+
+    /// <summary>
+    /// Known cloud providers with default model IDs.
+    /// </summary>
+    static readonly (string Type, string Model)[] KnownProviders =
+    [
+        ("Claude", "claude-sonnet-4-20250514"),
+        ("OpenAI", "gpt-4o"),
+        ("Gemini", "gemini-2.0-flash"),
+        ("Groq", "llama-3.3-70b-versatile"),
+    ];
+
+    /// <summary>
+    /// Builds a config by scanning PasswordVault for known provider API keys.
+    /// Creates presets for each provider with a stored key, plus Ollama (no key required).
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public static RunnerConfig BuildFromVault()
+    {
+        var config = new RunnerConfig();
+
+        PasswordVault vault;
+        IReadOnlyList<PasswordCredential> credentials;
+        try
+        {
+            vault = new PasswordVault();
+            credentials = vault.FindAllByResource("FieldCure.AssistStudio");
+        }
+        catch
+        {
+            // No credentials stored at all
+            return config;
+        }
+
+        var userNames = new HashSet<string>(credentials.Select(c => c.UserName));
+
+        foreach (var (type, model) in KnownProviders)
+        {
+            if (userNames.Contains(type))
+            {
+                config.Presets[type] = new PresetConfig
+                {
+                    ProviderType = type,
+                    ModelId = model,
+                };
+                config.DefaultPresetName ??= type;
+            }
+        }
+
+        // Ollama — no API key required, always available
+        config.Presets["Ollama"] = new PresetConfig
+        {
+            ProviderType = "Ollama",
+            ModelId = "llama3.1:latest",
+            BaseUrl = "http://localhost:11434",
+        };
+
+        return config;
     }
 
     /// <summary>
