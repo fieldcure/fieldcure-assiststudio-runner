@@ -1,4 +1,13 @@
-# Release Notes
+﻿# Release Notes
+
+## v0.3.0
+
+- **Default MCP servers** — `defaultMcpServers` in runner.json, auto-bootstrapped for every task execution
+- **Essentials auto-detection** — `BuildFromVault` includes FieldCure.Mcp.Essentials if installed
+- **Safe tools bypass** — `get_environment` and `run_javascript` always allowed regardless of AllowedTools
+- **`exclude_default_servers`** — per-task flag to opt out of default servers
+- **Core dependency removed** — replaced `FieldCure.AssistStudio.Core` with `FieldCure.Ai.Providers` for independent releases
+- **Test isolation** — `RUNNER_DATA_DIR` env var support; tests use temp directory
 
 ## v0.2.0 (2026-03-30)
 

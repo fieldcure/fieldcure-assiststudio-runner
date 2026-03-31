@@ -60,7 +60,7 @@ Add to `claude_desktop_config.json`:
 
 - [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) or later
 - Windows (required for Task Scheduler and Credential Manager)
-- [FieldCure.AssistStudio.Core](https://www.nuget.org/packages/FieldCure.AssistStudio.Core) (bundled)
+- [FieldCure.Ai.Providers](https://www.nuget.org/packages/FieldCure.Ai.Providers) (bundled)
 
 ## Links
 

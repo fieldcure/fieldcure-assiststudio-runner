@@ -1,4 +1,4 @@
-# AssistStudio Runner
+﻿# AssistStudio Runner
 
 [![NuGet](https://img.shields.io/nuget/v/FieldCure.AssistStudio.Runner)](https://www.nuget.org/packages/FieldCure.AssistStudio.Runner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/fieldcure/fieldcure-assiststudio-runner/blob/main/LICENSE)
