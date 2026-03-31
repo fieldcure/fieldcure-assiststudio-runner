@@ -15,6 +15,12 @@ namespace FieldCure.AssistStudio.Runner.Execution;
 /// </summary>
 public sealed class TaskExecutor
 {
+    /// <summary>
+    /// Tools that are always allowed regardless of the task's AllowedTools setting.
+    /// These tools have no side effects and provide context/computation only.
+    /// </summary>
+    internal static readonly HashSet<string> SafeTools = ["get_environment", "run_javascript"];
+
     readonly TaskStore _taskStore;
     readonly RunnerConfig _globalConfig;
     readonly ICredentialService _credentialService;
@@ -95,8 +101,9 @@ public sealed class TaskExecutor
 
             // ── Phase 2: Bootstrap MCP Servers ───────────────────────────
             pool = new McpServerPool(_logger);
+            var mergedServers = MergeMcpServers(task);
             var tools = await pool.BootstrapAsync(
-                task.McpServers, task.Guardrails.AllowedTools, _credentialService);
+                mergedServers, task.Guardrails.AllowedTools, _credentialService);
 
             // ── Phase 3: LLM Loop ───────────────────────────────────────
             var messages = new List<ChatMessage>
@@ -176,7 +183,8 @@ public sealed class TaskExecutor
 
                     string toolResult;
                     if (task.Guardrails.AllowedTools is not null
-                        && !task.Guardrails.AllowedTools.Contains(toolCall.FunctionName))
+                        && !task.Guardrails.AllowedTools.Contains(toolCall.FunctionName)
+                        && !SafeTools.Contains(toolCall.FunctionName))
                     {
                         toolResult = $"DENIED: Tool '{toolCall.FunctionName}' is not in the allowed tools list.";
                         _logger.LogWarning("Denied tool call: {ToolName}", toolCall.FunctionName);
@@ -403,6 +411,26 @@ public sealed class TaskExecutor
         {
             _logger.LogWarning(ex, "Error cleaning old logs");
         }
+    }
+
+    /// <summary>
+    /// Merges default MCP servers from config with task-specific servers.
+    /// Task servers take precedence for duplicate names.
+    /// </summary>
+    List<McpServerConfig> MergeMcpServers(RunnerTask task)
+    {
+        if (task.ExcludeDefaultServers)
+            return task.McpServers;
+
+        var merged = new Dictionary<string, McpServerConfig>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in _globalConfig.DefaultMcpServers)
+            merged[entry.Name] = entry.ToMcpServerConfig();
+
+        foreach (var server in task.McpServers)
+            merged[server.Id] = server; // task-specific servers win
+
+        return [.. merged.Values];
     }
 }
 

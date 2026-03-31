@@ -48,6 +48,8 @@ public static class CreateTaskTool
         string? preset_name = null,
         [Description("Outbox channel name for result notification")]
         string? output_channel = null,
+        [Description("When true, default MCP servers from runner.json are not included. Default: false.")]
+        bool? exclude_default_servers = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -109,6 +111,7 @@ public static class CreateTaskTool
                 },
                 PresetName = preset_name,
                 McpServers = servers,
+                ExcludeDefaultServers = exclude_default_servers ?? false,
                 OutputChannel = output_channel,
                 CreatedAt = now,
                 UpdatedAt = now,

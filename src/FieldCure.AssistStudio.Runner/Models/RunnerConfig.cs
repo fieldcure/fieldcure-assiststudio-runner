@@ -40,6 +40,12 @@ public sealed class RunnerConfig
     public RetryConfig Retry { get; set; } = new();
 
     /// <summary>
+    /// MCP servers that are automatically bootstrapped for every task execution.
+    /// Task-specific <c>mcp_servers</c> are merged on top of these defaults.
+    /// </summary>
+    public List<McpServerEntry> DefaultMcpServers { get; set; } = [];
+
+    /// <summary>
     /// Resolves a preset name to a <see cref="ProviderPreset"/> instance.
     /// Falls back to matching by provider type if exact name match fails.
     /// </summary>
@@ -83,7 +89,9 @@ public sealed class RunnerConfig
     /// Resolves the effective data directory (config override or default).
     /// </summary>
     public string GetEffectiveDataDirectory() =>
-        DataDirectory ?? GetDefaultDataDirectory();
+        DataDirectory
+        ?? Environment.GetEnvironmentVariable("RUNNER_DATA_DIR")
+        ?? GetDefaultDataDirectory();
 
     /// <summary>
     /// Loads configuration from the specified directory's runner.json.
@@ -144,6 +152,30 @@ public sealed class RunnerConfig
             BaseUrl = "http://localhost:11434",
         };
 
+        // Auto-detect installed Essentials MCP server
+        var essentialsExeName = OperatingSystem.IsWindows()
+            ? "fieldcure-mcp-essentials.exe"
+            : "fieldcure-mcp-essentials";
+
+        // Check global dotnet tool path
+        var globalToolPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".dotnet", "tools", essentialsExeName);
+
+        // Check AssistStudio's local tool path
+        var localToolPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FieldCure", "AssistStudio", "tools", essentialsExeName);
+
+        if (File.Exists(globalToolPath) || File.Exists(localToolPath))
+        {
+            config.DefaultMcpServers.Add(new McpServerEntry
+            {
+                Name = "essentials",
+                Command = "fieldcure-mcp-essentials",
+            });
+        }
+
         return config;
     }
 
@@ -194,4 +226,35 @@ public sealed class RetryConfig
 
     /// <summary>Multiplier for exponential backoff between retries.</summary>
     public double BackoffMultiplier { get; set; } = 2.0;
+}
+
+/// <summary>
+/// Lightweight MCP server definition for runner.json configuration.
+/// </summary>
+public sealed class McpServerEntry
+{
+    /// <summary>Server display name (used as merge key).</summary>
+    public required string Name { get; set; }
+
+    /// <summary>Executable command (e.g., dotnet tool name).</summary>
+    public required string Command { get; set; }
+
+    /// <summary>Command arguments.</summary>
+    public List<string> Args { get; set; } = [];
+
+    /// <summary>Additional environment variables.</summary>
+    public Dictionary<string, string>? Env { get; set; }
+
+    /// <summary>
+    /// Converts to a <see cref="McpServerConfig"/> for MCP client bootstrapping.
+    /// </summary>
+    public McpServerConfig ToMcpServerConfig() => new()
+    {
+        Id = $"default_{Name}",
+        Name = Name,
+        TransportType = McpTransportType.Stdio,
+        Command = Command,
+        Arguments = Args,
+        IsEnabled = true,
+    };
 }

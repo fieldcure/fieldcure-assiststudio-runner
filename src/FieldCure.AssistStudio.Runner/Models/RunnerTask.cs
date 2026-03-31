@@ -41,6 +41,12 @@ public sealed class RunnerTask
     public List<McpServerConfig> McpServers { get; set; } = [];
 
     /// <summary>
+    /// When true, default MCP servers from runner.json are not included.
+    /// Only task-specific <c>McpServers</c> are bootstrapped.
+    /// </summary>
+    public bool ExcludeDefaultServers { get; set; }
+
+    /// <summary>
     /// Outbox channel name for sending results. Null = no notification.
     /// </summary>
     public string? OutputChannel { get; set; }

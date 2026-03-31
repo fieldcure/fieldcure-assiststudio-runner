@@ -88,6 +88,15 @@ public sealed class TaskStore : IDisposable
             CREATE INDEX IF NOT EXISTS idx_executions_status ON TaskExecutions(Status);
             """;
         cmd.ExecuteNonQuery();
+
+        // Migration: add ExcludeDefaultServers column (v0.3.0)
+        try
+        {
+            using var migCmd = conn.CreateCommand();
+            migCmd.CommandText = "ALTER TABLE Tasks ADD COLUMN ExcludeDefaultServers INTEGER NOT NULL DEFAULT 0;";
+            migCmd.ExecuteNonQuery();
+        }
+        catch (SqliteException) { /* column already exists */ }
     }
 
     SqliteConnection Open()
@@ -148,10 +157,10 @@ public sealed class TaskStore : IDisposable
         cmd.CommandText = """
             INSERT INTO Tasks (Id, Name, Description, Prompt, Schedule, IsEnabled,
                 MaxRounds, TimeoutSeconds, AllowedTools, PresetName, McpServers, OutputChannel,
-                CreatedAt, UpdatedAt)
+                ExcludeDefaultServers, CreatedAt, UpdatedAt)
             VALUES (@id, @name, @desc, @prompt, @schedule, @enabled,
                 @maxRounds, @timeout, @allowedTools, @preset, @mcpServers, @outputChannel,
-                @created, @updated)
+                @excludeDefaults, @created, @updated)
             """;
 
         cmd.Parameters.AddWithValue("@id", task.Id);
@@ -169,6 +178,7 @@ public sealed class TaskStore : IDisposable
         cmd.Parameters.AddWithValue("@preset", (object?)task.PresetName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@mcpServers", JsonSerializer.Serialize(task.McpServers, JsonOptions));
         cmd.Parameters.AddWithValue("@outputChannel", (object?)task.OutputChannel ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@excludeDefaults", task.ExcludeDefaultServers ? 1 : 0);
         cmd.Parameters.AddWithValue("@created", task.CreatedAt.ToString("o"));
         cmd.Parameters.AddWithValue("@updated", task.UpdatedAt.ToString("o"));
 
@@ -184,7 +194,8 @@ public sealed class TaskStore : IDisposable
                 Name = @name, Description = @desc, Prompt = @prompt, Schedule = @schedule,
                 IsEnabled = @enabled, MaxRounds = @maxRounds, TimeoutSeconds = @timeout,
                 AllowedTools = @allowedTools, PresetName = @preset, McpServers = @mcpServers,
-                OutputChannel = @outputChannel, UpdatedAt = @updated
+                OutputChannel = @outputChannel, ExcludeDefaultServers = @excludeDefaults,
+                UpdatedAt = @updated
             WHERE Id = @id
             """;
 
@@ -203,6 +214,7 @@ public sealed class TaskStore : IDisposable
         cmd.Parameters.AddWithValue("@preset", (object?)task.PresetName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@mcpServers", JsonSerializer.Serialize(task.McpServers, JsonOptions));
         cmd.Parameters.AddWithValue("@outputChannel", (object?)task.OutputChannel ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@excludeDefaults", task.ExcludeDefaultServers ? 1 : 0);
         cmd.Parameters.AddWithValue("@updated", task.UpdatedAt.ToString("o"));
 
         await cmd.ExecuteNonQueryAsync();
@@ -400,6 +412,8 @@ public sealed class TaskStore : IDisposable
             PresetName = reader.IsDBNull(reader.GetOrdinal("PresetName"))
                 ? null : reader.GetString(reader.GetOrdinal("PresetName")),
             McpServers = JsonSerializer.Deserialize<List<McpServerConfig>>(mcpServersJson, JsonOptions) ?? [],
+            ExcludeDefaultServers = !reader.IsDBNull(reader.GetOrdinal("ExcludeDefaultServers"))
+                && reader.GetInt32(reader.GetOrdinal("ExcludeDefaultServers")) != 0,
             OutputChannel = reader.IsDBNull(reader.GetOrdinal("OutputChannel"))
                 ? null : reader.GetString(reader.GetOrdinal("OutputChannel")),
             CreatedAt = DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt"))),

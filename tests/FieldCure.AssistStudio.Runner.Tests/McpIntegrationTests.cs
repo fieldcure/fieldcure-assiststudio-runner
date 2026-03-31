@@ -18,6 +18,26 @@ public class McpIntegrationTests
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <summary>Temp directory for test isolation — cleaned up in ClassCleanup.</summary>
+    static string? _testDataDir;
+
+    [ClassInitialize]
+    public static void ClassInit(TestContext _)
+    {
+        _testDataDir = Path.Combine(Path.GetTempPath(), $"runner-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_testDataDir);
+    }
+
+    [ClassCleanup]
+    public static void ClassClean()
+    {
+        if (_testDataDir is not null && Directory.Exists(_testDataDir))
+        {
+            try { Directory.Delete(_testDataDir, recursive: true); }
+            catch { /* best effort */ }
+        }
+    }
+
     static async Task<McpClient> CreateClientAsync()
     {
         // Find the built exe — adjust if running from different directory
@@ -46,6 +66,10 @@ public class McpIntegrationTests
             Command = command,
             Arguments = args,
             Name = "runner-test",
+            EnvironmentVariables = new Dictionary<string, string>
+            {
+                ["RUNNER_DATA_DIR"] = _testDataDir!,
+            },
         });
 
         return await McpClient.CreateAsync(transport);
