@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FieldCure.AssistStudio.Models;
+using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Models;
 using Microsoft.Data.Sqlite;
 

@@ -1,4 +1,4 @@
-using FieldCure.AssistStudio.Models;
+using FieldCure.Ai.Providers.Models;
 
 namespace FieldCure.AssistStudio.Runner.Models;
 

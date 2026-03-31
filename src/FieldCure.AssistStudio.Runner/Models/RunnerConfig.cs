@@ -1,7 +1,7 @@
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FieldCure.AssistStudio.Models;
+using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
 
 namespace FieldCure.AssistStudio.Runner.Models;

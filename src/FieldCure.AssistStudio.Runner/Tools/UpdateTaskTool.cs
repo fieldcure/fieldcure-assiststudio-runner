@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
-using FieldCure.AssistStudio.Models;
+using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Models;
 using FieldCure.AssistStudio.Runner.Scheduling;
 using FieldCure.AssistStudio.Runner.Storage;

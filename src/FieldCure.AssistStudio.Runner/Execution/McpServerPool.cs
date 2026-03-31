@@ -1,6 +1,7 @@
 using System.Text.Json;
-using FieldCure.AssistStudio.Models;
+using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
+using FieldCure.AssistStudio.Runner.Models;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
