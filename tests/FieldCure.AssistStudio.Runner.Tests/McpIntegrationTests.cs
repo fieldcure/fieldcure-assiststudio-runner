@@ -66,7 +66,7 @@ public class McpIntegrationTests
             Command = command,
             Arguments = args,
             Name = "runner-test",
-            EnvironmentVariables = new Dictionary<string, string>
+            EnvironmentVariables = new Dictionary<string, string?>
             {
                 ["RUNNER_DATA_DIR"] = _testDataDir!,
             },
