@@ -1,5 +1,10 @@
 ﻿# Release Notes
 
+## v0.4.0
+
+- **Fix: schtasks tool path resolution** — `ResolveToolPath()` now checks `%LOCALAPPDATA%\FieldCure\AssistStudio\tools\` first, fixing FILE_NOT_FOUND errors when schtasks triggers the runner executable
+- **Fix: cron `*` normalization** — bare `*` is now normalized to `*/1` before schtasks mapping, so `0 * * * *` and `0 */1 * * *` are handled identically
+
 ## v0.3.0
 
 - **Default MCP servers** — `defaultMcpServers` in runner.json, auto-bootstrapped for every task execution

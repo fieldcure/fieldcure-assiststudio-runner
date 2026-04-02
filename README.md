@@ -10,7 +10,7 @@ A headless LLM task automation engine that executes natural language tasks on sc
 - **Dual-mode operation** — MCP server (`serve`) for task management, headless CLI (`exec`) for scheduled execution
 - **7 MCP tools** — `create_task`, `update_task`, `delete_task`, `list_tasks`, `run_task`, `get_task_history`, `get_execution_status`
 - **Windows Task Scheduler integration** — cron expressions automatically mapped to `schtasks` entries
-- **Multi-provider LLM support** — Claude, OpenAI, Gemini, Ollama, Groq via [AssistStudio.Core](https://www.nuget.org/packages/FieldCure.AssistStudio.Core)
+- **Multi-provider LLM support** — Claude, OpenAI, Gemini, Ollama, Groq via [Ai.Providers](https://www.nuget.org/packages/FieldCure.Ai.Providers)
 - **MCP server orchestration** — tasks can bootstrap any MCP servers (Outbox, RAG, Filesystem, custom)
 - **Safety-first tool control** — `AllowedTools` null = no tools; explicit allowlist required for headless execution
 - **Secure credentials** — API keys in Windows Credential Manager (DPAPI), shared with AssistStudio
