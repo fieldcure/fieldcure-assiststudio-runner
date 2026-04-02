@@ -25,15 +25,19 @@ public static class CronToSchtasks
             throw new UnsupportedScheduleException(cron,
                 "Expected 5 fields: minute hour day-of-month month day-of-week");
 
+        // Normalize: bare "*" is semantically identical to "*/1"
+        for (var i = 0; i < parts.Length; i++)
+            if (parts[i] == "*") parts[i] = "*/1";
+
         var (minute, hour, dom, month, dow) = (parts[0], parts[1], parts[2], parts[3], parts[4]);
 
         // Validate month field — only * is supported in v2.0
-        if (month != "*")
+        if (month != "*/1")
             throw new UnsupportedScheduleException(cron,
                 "Month-specific schedules are not supported. Use '*' for month.");
 
         // Pattern: */N * * * * → MINUTE
-        if (minute.StartsWith("*/") && hour == "*" && dom == "*" && dow == "*")
+        if (minute.StartsWith("*/") && hour == "*/1" && dom == "*/1" && dow == "*/1")
         {
             if (!int.TryParse(minute[2..], out var interval) || interval < 1)
                 throw new UnsupportedScheduleException(cron, "Invalid minute interval.");
@@ -43,7 +47,7 @@ public static class CronToSchtasks
         }
 
         // Pattern: 0 */N * * * → HOURLY
-        if (minute == "0" && hour.StartsWith("*/") && dom == "*" && dow == "*")
+        if (minute == "0" && hour.StartsWith("*/") && dom == "*/1" && dow == "*/1")
         {
             if (!int.TryParse(hour[2..], out var interval) || interval < 1)
                 throw new UnsupportedScheduleException(cron, "Invalid hour interval.");
@@ -61,7 +65,7 @@ public static class CronToSchtasks
         var startTime = $"{hr:D2}:{min:D2}";
 
         // Pattern: M H D * * → MONTHLY
-        if (dom != "*" && dow == "*")
+        if (dom != "*/1" && dow == "*/1")
         {
             if (!int.TryParse(dom, out var day) || day < 1 || day > 31)
                 throw new UnsupportedScheduleException(cron, "Day of month must be 1-31.");
@@ -72,7 +76,7 @@ public static class CronToSchtasks
         }
 
         // Pattern: M H * * dow → WEEKLY (or DAILY if dow == *)
-        if (dom == "*" && dow != "*")
+        if (dom == "*/1" && dow != "*/1")
         {
             var days = ParseDays(dow, cron);
             var allDays = new[] { "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" };
@@ -89,7 +93,7 @@ public static class CronToSchtasks
         }
 
         // Pattern: M H * * * → DAILY
-        if (dom == "*" && dow == "*")
+        if (dom == "*/1" && dow == "*/1")
         {
             return new SchtasksTrigger(ScheduleType.Daily, 1, startTime,
                 Description: $"Daily at {startTime}");

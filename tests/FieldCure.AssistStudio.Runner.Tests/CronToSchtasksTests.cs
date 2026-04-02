@@ -90,6 +90,46 @@ public class CronToSchtasksTests
     }
 
     [TestMethod]
+    public void BareStar_MinuteField_TreatedAsEveryMinute()
+    {
+        var trigger = CronToSchtasks.Convert("* * * * *");
+        Assert.AreEqual(ScheduleType.Minute, trigger.Type);
+        Assert.AreEqual(1, trigger.Interval);
+        Assert.AreEqual("/SC MINUTE /MO 1", trigger.ToSchtasksArgs());
+    }
+
+    [TestMethod]
+    public void BareStar_MinuteField_EquivalentToSlash1()
+    {
+        var star = CronToSchtasks.Convert("* * * * *");
+        var slash1 = CronToSchtasks.Convert("*/1 * * * *");
+
+        Assert.AreEqual(slash1.Type, star.Type);
+        Assert.AreEqual(slash1.Interval, star.Interval);
+        Assert.AreEqual(slash1.ToSchtasksArgs(), star.ToSchtasksArgs());
+    }
+
+    [TestMethod]
+    public void BareStar_HourField_TreatedAsHourly()
+    {
+        var trigger = CronToSchtasks.Convert("0 * * * *");
+        Assert.AreEqual(ScheduleType.Hourly, trigger.Type);
+        Assert.AreEqual(1, trigger.Interval);
+        Assert.AreEqual("/SC HOURLY /MO 1 /ST 00:00", trigger.ToSchtasksArgs());
+    }
+
+    [TestMethod]
+    public void BareStar_HourField_EquivalentToSlash1()
+    {
+        var star = CronToSchtasks.Convert("0 * * * *");
+        var slash1 = CronToSchtasks.Convert("0 */1 * * *");
+
+        Assert.AreEqual(slash1.Type, star.Type);
+        Assert.AreEqual(slash1.Interval, star.Interval);
+        Assert.AreEqual(slash1.ToSchtasksArgs(), star.ToSchtasksArgs());
+    }
+
+    [TestMethod]
     public void ComplexPattern_Throws()
     {
         Assert.ThrowsExactly<UnsupportedScheduleException>(
