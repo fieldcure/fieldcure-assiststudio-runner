@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FieldCure.Ai.Providers" Version="0.1.0" />
+    <PackageReference Include="FieldCure.Ai.Providers" Version="0.*" />
     <PackageReference Include="ModelContextProtocol" Version="1.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.*" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.*" />
