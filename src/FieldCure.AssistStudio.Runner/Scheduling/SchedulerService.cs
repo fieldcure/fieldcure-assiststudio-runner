@@ -75,11 +75,21 @@ public sealed class SchedulerService
         if (!string.IsNullOrEmpty(_config.ToolPath))
             return _config.ToolPath;
 
-        // Default: assume it's on PATH as a dotnet tool
-        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var defaultPath = Path.Combine(userProfile, ".dotnet", "tools", "assiststudio-runner.exe");
+        // Primary: AssistStudio local tool install path
+        var localToolPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FieldCure", "AssistStudio", "tools", "assiststudio-runner.exe");
+        if (File.Exists(localToolPath))
+            return localToolPath;
 
-        return File.Exists(defaultPath) ? defaultPath : "assiststudio-runner";
+        // Fallback: global dotnet tool
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var globalToolPath = Path.Combine(userProfile, ".dotnet", "tools", "assiststudio-runner.exe");
+        if (File.Exists(globalToolPath))
+            return globalToolPath;
+
+        // Last resort: assume on PATH
+        return "assiststudio-runner";
     }
 
     async Task<ScheduleResult> RunSchtasksAsync(string arguments)
