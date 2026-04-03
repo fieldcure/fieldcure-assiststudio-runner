@@ -40,8 +40,8 @@ public static class RunTaskTool
             if (await store.HasRunningExecutionAsync(task_id))
                 return JsonSerializer.Serialize(new { success = false, error = $"Task '{task_id}' already has a running execution." }, JsonOptions);
 
-            // Start execution in background
-            var executionTask = Task.Run(() => executor.ExecuteAsync(task_id, cancellationToken), cancellationToken);
+            // Start execution (runs asynchronously — no Task.Run needed for async methods)
+            var executionTask = executor.ExecuteAsync(task_id, cancellationToken);
 
             if (wait == true)
             {

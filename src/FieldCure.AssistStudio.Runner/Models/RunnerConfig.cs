@@ -111,7 +111,12 @@ public sealed class RunnerConfig
 
     /// <summary>
     /// Known cloud providers with default model IDs.
+    /// These are used only for auto-config when no runner.json exists.
+    /// Users can override model IDs in their runner.json presets.
     /// </summary>
+    /// <remarks>
+    /// Last updated: 2025-05. Update these when major new models are released.
+    /// </remarks>
     static readonly (string Type, string Model)[] KnownProviders =
     [
         ("Claude", "claude-sonnet-4-20250514"),
