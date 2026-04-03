@@ -10,6 +10,7 @@ A headless LLM task automation engine that executes natural language tasks on sc
 - **Dual-mode operation** — MCP server (`serve`) for task management, headless CLI (`exec`) for scheduled execution
 - **7 MCP tools** — `create_task`, `update_task`, `delete_task`, `list_tasks`, `run_task`, `get_task_history`, `get_execution_status`
 - **Windows Task Scheduler integration** — cron expressions automatically mapped to `schtasks` entries
+- **Shared AgentLoop** — LLM execution powered by [Ai.Execution](https://www.nuget.org/packages/FieldCure.Ai.Execution) (same loop used by SubAgentExecutor)
 - **Multi-provider LLM support** — Claude, OpenAI, Gemini, Ollama, Groq via [Ai.Providers](https://www.nuget.org/packages/FieldCure.Ai.Providers)
 - **MCP server orchestration** — tasks can bootstrap any MCP servers (Outbox, RAG, Filesystem, custom)
 - **Safety-first tool control** — `AllowedTools` null = no tools; explicit allowlist required for headless execution
@@ -202,7 +203,7 @@ src/FieldCure.AssistStudio.Runner/
 ├── Storage/TaskStore.cs          # SQLite storage with WAL mode
 ├── Credentials/                  # ICredentialService + Windows PasswordVault
 ├── Scheduling/                   # CronToSchtasks parser, SchedulerService (schtasks)
-├── Execution/                    # TaskExecutor (6-phase pipeline), McpServerPool
+├── Execution/                    # TaskExecutor (AgentLoop-based), McpServerPool
 ├── Tools/                        # 7 MCP tools for serve mode
 └── Configuration/ConfigRunner.cs # CLI config subcommands
 ```

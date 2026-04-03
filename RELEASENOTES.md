@@ -1,5 +1,12 @@
 ﻿# Release Notes
 
+## v0.5.0
+
+- **AgentLoop extraction** — LLM execution loop replaced with shared `FieldCure.Ai.Execution.AgentLoop`, eliminating ~120 lines of inline loop code from TaskExecutor
+- **MCP SDK 1.2.0** — upgraded ModelContextProtocol from 1.1.0 to 1.2.0
+- **Removed retry logic** — `CompleteWithRetryAsync` removed; retry is now the caller's responsibility (task-level re-execution via schtasks serves as retry)
+- **SafeTools moved** — safe tool allowlist (`get_environment`, `run_javascript`) moved from TaskExecutor to McpServerPool where filtering actually occurs
+
 ## v0.4.0
 
 - **Fix: schtasks tool path resolution** — `ResolveToolPath()` now checks `%LOCALAPPDATA%\FieldCure\AssistStudio\tools\` first, fixing FILE_NOT_FOUND errors when schtasks triggers the runner executable
@@ -28,7 +35,7 @@ Initial release.
 
 - **Dual-mode operation** — MCP server (`serve`) for task CRUD + execution, headless CLI (`exec`) for scheduled runs
 - **7 MCP tools** — `create_task`, `update_task`, `delete_task`, `list_tasks`, `run_task`, `get_task_history`, `get_execution_status`
-- **6-phase execution pipeline** — initialize, MCP bootstrap, LLM loop (CompleteAsync), summarize, notify, cleanup
+- **6-phase execution pipeline** — initialize, MCP bootstrap, LLM loop, summarize, notify, cleanup
 - **Windows Task Scheduler integration** — cron-to-schtasks mapping (minute, hourly, daily, weekly, monthly)
 - **Multi-provider LLM support** — Claude, OpenAI, Gemini, Ollama, Groq via AssistStudio.Core
 - **MCP server orchestration** — tasks bootstrap configured MCP servers (Outbox, RAG, Filesystem, custom)

@@ -14,6 +14,12 @@ namespace FieldCure.AssistStudio.Runner.Execution;
 /// </summary>
 internal sealed class McpServerPool : IAsyncDisposable
 {
+    /// <summary>
+    /// Tools that are always allowed regardless of the allowlist.
+    /// These tools have no side effects and provide context/computation only.
+    /// </summary>
+    static readonly HashSet<string> SafeTools = ["get_environment", "run_javascript"];
+
     readonly List<McpClient> _clients = [];
     readonly Dictionary<string, McpToolAdapter> _toolMap = new();
     readonly ILogger _logger;
@@ -74,7 +80,7 @@ internal sealed class McpServerPool : IAsyncDisposable
                 // Only expose tools that are in the allowlist or are safe tools
                 if (allowedTools is not null
                     && (allowedTools.Contains(capturedTool.Name)
-                        || TaskExecutor.SafeTools.Contains(capturedTool.Name)))
+                        || SafeTools.Contains(capturedTool.Name)))
                 {
                     tools.Add(adapter);
                 }

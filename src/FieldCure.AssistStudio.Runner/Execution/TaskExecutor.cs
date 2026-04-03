@@ -1,6 +1,7 @@
 using System.Text.Json;
-using FieldCure.Ai.Providers.Models;
+using FieldCure.Ai.Execution;
 using FieldCure.Ai.Providers;
+using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
 using FieldCure.AssistStudio.Runner.Models;
 using FieldCure.AssistStudio.Runner.Storage;
@@ -10,17 +11,11 @@ namespace FieldCure.AssistStudio.Runner.Execution;
 
 /// <summary>
 /// Core execution engine for Runner tasks.
-/// Uses IAiProvider.CompleteAsync() for non-streaming headless execution.
+/// Delegates the LLM loop to <see cref="AgentLoop"/> for shared execution logic.
 /// Used by both exec mode (CLI) and serve mode (run_task).
 /// </summary>
 public sealed class TaskExecutor
 {
-    /// <summary>
-    /// Tools that are always allowed regardless of the task's AllowedTools setting.
-    /// These tools have no side effects and provide context/computation only.
-    /// </summary>
-    internal static readonly HashSet<string> SafeTools = ["get_environment", "run_javascript"];
-
     readonly TaskStore _taskStore;
     readonly RunnerConfig _globalConfig;
     readonly ICredentialService _credentialService;
@@ -105,140 +100,34 @@ public sealed class TaskExecutor
             var tools = await pool.BootstrapAsync(
                 mergedServers, task.Guardrails.AllowedTools, _credentialService);
 
-            // ── Phase 3: LLM Loop ───────────────────────────────────────
-            var messages = new List<ChatMessage>
+            // ── Phase 3: LLM Loop (delegated to AgentLoop) ────────────
+            var agentLoop = new AgentLoop();
+            var loopContext = new AgentLoopContext
             {
-                new(ChatRole.User, task.Prompt)
+                Provider = provider,
+                SystemPrompt = BuildSystemPrompt(task),
+                UserPrompt = task.Prompt,
+                Tools = tools.Cast<IAssistTool>().ToList(),
+                MaxRounds = task.Guardrails.MaxRounds,
+                Temperature = preset.Temperature,
+                MaxTokens = preset.MaxTokens,
             };
 
-            var systemPrompt = BuildSystemPrompt(task);
-            var toolList = tools.Cast<IAssistTool>().ToList();
+            var loopResult = await agentLoop.RunAsync(loopContext, linkedCts.Token);
 
-            for (var round = 1; round <= task.Guardrails.MaxRounds; round++)
+            // ── Phase 4: Map result ─────────────────────────────────────
+            execution.RoundsExecuted = loopResult.RoundsExecuted;
+            execution.ResultSummary = loopResult.Summary;
+
+            execution.Status = loopResult.Status switch
             {
-                linkedCts.Token.ThrowIfCancellationRequested();
+                AgentLoopStatus.Completed => ExecutionStatus.Succeeded,
+                AgentLoopStatus.MaxRoundsReached => ExecutionStatus.Failed,
+                _ => ExecutionStatus.Failed,
+            };
 
-                _logger.LogDebug("Round {Round}/{Max}", round, task.Guardrails.MaxRounds);
-
-                var request = new AiRequest
-                {
-                    Messages = messages,
-                    SystemPrompt = systemPrompt,
-                    Temperature = preset.Temperature,
-                    MaxTokens = preset.MaxTokens,
-                    Tools = toolList.Count > 0 ? toolList : null,
-                };
-
-                AiResponse response;
-                try
-                {
-                    response = await CompleteWithRetryAsync(provider, request, linkedCts.Token);
-                }
-                catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
-                {
-                    execution.Status = ExecutionStatus.TimedOut;
-                    execution.ErrorMessage = $"Execution timed out after {task.Guardrails.TimeoutSeconds} seconds.";
-                    break;
-                }
-
-                var roundLog = new RoundLog { Round = round };
-
-                // No tool calls → success
-                if (!response.HasToolCalls)
-                {
-                    execution.Status = ExecutionStatus.Succeeded;
-                    execution.ResultSummary = response.Content?.Trim();
-                    roundLog.Response = new RoundMessage
-                    {
-                        Role = "assistant",
-                        Content = response.Content,
-                    };
-                    executionLog.Rounds.Add(roundLog);
-                    break;
-                }
-
-                // Process tool calls
-                var assistantMsg = new ChatMessage(ChatRole.Assistant, response.Content ?? "")
-                {
-                    ToolCalls = response.ToolCalls.ToList(),
-                };
-                messages.Add(assistantMsg);
-
-                roundLog.Response = new RoundMessage
-                {
-                    Role = "assistant",
-                    Content = response.Content,
-                    ToolCalls = response.ToolCalls.Select(tc => new ToolCallLog
-                    {
-                        Id = tc.Id,
-                        Name = tc.FunctionName,
-                        Arguments = tc.Arguments,
-                    }).ToList(),
-                };
-                roundLog.ToolResults = [];
-
-                foreach (var toolCall in response.ToolCalls)
-                {
-                    linkedCts.Token.ThrowIfCancellationRequested();
-
-                    string toolResult;
-                    if (task.Guardrails.AllowedTools is not null
-                        && !task.Guardrails.AllowedTools.Contains(toolCall.FunctionName)
-                        && !SafeTools.Contains(toolCall.FunctionName))
-                    {
-                        toolResult = $"DENIED: Tool '{toolCall.FunctionName}' is not in the allowed tools list.";
-                        _logger.LogWarning("Denied tool call: {ToolName}", toolCall.FunctionName);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            var tool = tools.FirstOrDefault(t => t.Name == toolCall.FunctionName);
-                            if (tool is null)
-                            {
-                                toolResult = $"Error: Tool '{toolCall.FunctionName}' not found.";
-                            }
-                            else
-                            {
-                                var args = JsonDocument.Parse(toolCall.Arguments).RootElement;
-                                toolResult = await tool.ExecuteAsync(args, linkedCts.Token);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            toolResult = $"Error executing tool '{toolCall.FunctionName}': {ex.Message}";
-                            _logger.LogWarning(ex, "Tool call failed: {ToolName}", toolCall.FunctionName);
-                        }
-                    }
-
-                    messages.Add(new ChatMessage(ChatRole.Tool, toolResult)
-                    {
-                        ToolCallId = toolCall.Id,
-                    });
-
-                    roundLog.ToolResults.Add(new ToolResultLog
-                    {
-                        ToolCallId = toolCall.Id,
-                        Content = toolResult,
-                    });
-                }
-
-                executionLog.Rounds.Add(roundLog);
-                execution.RoundsExecuted = round;
-
-                // Check if max rounds reached
-                if (round == task.Guardrails.MaxRounds)
-                {
-                    execution.Status = ExecutionStatus.Failed;
-                    execution.ErrorMessage = $"Maximum rounds ({task.Guardrails.MaxRounds}) reached without completion.";
-                }
-            }
-
-            // ── Phase 4: Summarize ──────────────────────────────────────
-            if (execution.Status == ExecutionStatus.Running)
-            {
-                execution.Status = ExecutionStatus.Succeeded;
-            }
+            if (loopResult.Status != AgentLoopStatus.Completed)
+                execution.ErrorMessage = loopResult.ErrorMessage;
 
             // ── Phase 5: Notify ─────────────────────────────────────────
             await TryNotifyAsync(task, execution, pool);
@@ -302,29 +191,6 @@ public sealed class TaskExecutor
             - You have a maximum of {task.Guardrails.MaxRounds} rounds.
             - Available tools: {toolsInfo}
             """;
-    }
-
-    async Task<AiResponse> CompleteWithRetryAsync(
-        IAiProvider provider, AiRequest request, CancellationToken ct)
-    {
-        var maxAttempts = _globalConfig.Retry.MaxAttempts;
-        var delayMs = _globalConfig.Retry.InitialDelayMs;
-        var multiplier = _globalConfig.Retry.BackoffMultiplier;
-
-        for (var attempt = 1; ; attempt++)
-        {
-            try
-            {
-                return await provider.CompleteAsync(request, ct);
-            }
-            catch (Exception ex) when (attempt < maxAttempts && !ct.IsCancellationRequested)
-            {
-                _logger.LogWarning(ex, "LLM API attempt {Attempt}/{Max} failed, retrying in {Delay}ms",
-                    attempt, maxAttempts, delayMs);
-                await Task.Delay(delayMs, ct);
-                delayMs = (int)(delayMs * multiplier);
-            }
-        }
     }
 
     async Task TryNotifyAsync(RunnerTask task, TaskExecution execution, McpServerPool pool)
