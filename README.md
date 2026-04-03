@@ -140,16 +140,16 @@ Add to `.vscode/mcp.json`:
 ### Conversation Example
 
 ```
-User: "매일 아침 9시에 경쟁사 뉴스 요약해서 Slack으로 보내줘"
+User: "Summarize competitor news every morning at 9 AM and send it to Slack"
   LLM → create_task (schedule: "0 9 * * 1-5", mcp_servers: [outbox, rag])
 
-User: "한번 테스트해봐"
-  LLM → run_task (wait: true) → 결과 보고
+User: "Run a test"
+  LLM → run_task (wait: true) → reports result
 
-User: "주말은 빼줘"
+User: "Exclude weekends"
   LLM → update_task (schedule: "0 9 * * 1-5")
 
-User: "어제 결과는?"
+User: "What were yesterday's results?"
   LLM → get_task_history (limit: 1)
 ```
 
