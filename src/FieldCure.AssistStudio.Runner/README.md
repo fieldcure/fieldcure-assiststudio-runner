@@ -56,10 +56,6 @@ Add to `claude_desktop_config.json`:
 | **Exec** | `assiststudio-runner exec <task-id>` | Headless single-task execution |
 | **Config** | `assiststudio-runner config <cmd>` | Credential and configuration management |
 
-### AssistStudio
-
-Runner is a built-in server in AssistStudio — no manual registration needed.
-
 ## Requirements
 
 - [.NET 8.0 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) or later

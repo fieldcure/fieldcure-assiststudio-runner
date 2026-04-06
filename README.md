@@ -123,10 +123,6 @@ Add to `.vscode/mcp.json`:
 }
 ```
 
-### AssistStudio
-
-Runner is a built-in server in AssistStudio — no manual registration needed.
-
 ## Tools
 
 | Tool | Description | Confirmation |
