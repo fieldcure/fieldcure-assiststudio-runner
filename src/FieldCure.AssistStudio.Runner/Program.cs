@@ -61,6 +61,8 @@ async Task<int> RunServeAsync()
             options.ServerInfo = new()
             {
                 Name = "assiststudio-runner",
+                Title = "AssistStudio Runner",
+                Description = "Headless LLM task runner with scheduling via Windows Task Scheduler",
                 Version = typeof(Program).Assembly
                     .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
                     ?.InformationalVersion ?? "0.0.0",

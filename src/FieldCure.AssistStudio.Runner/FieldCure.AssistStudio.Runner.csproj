@@ -20,11 +20,12 @@
     <PackageProjectUrl>https://github.com/fieldcure/fieldcure-assiststudio-runner</PackageProjectUrl>
     <RepositoryUrl>https://github.com/fieldcure/fieldcure-assiststudio-runner</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>mcp;llm;automation;scheduler;runner;assiststudio</PackageTags>
+    <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
     <PackageReleaseNotes>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\..\..\RELEASENOTES.md'))</PackageReleaseNotes>
 
+    <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>assiststudio-runner</ToolCommandName>
   </PropertyGroup>
@@ -44,6 +45,7 @@
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
     <None Include="Logo.png" Pack="true" PackagePath="" />
+    <None Include=".mcp/server.json" Pack="true" PackagePath=".mcp/" />
   </ItemGroup>
 
 </Project>

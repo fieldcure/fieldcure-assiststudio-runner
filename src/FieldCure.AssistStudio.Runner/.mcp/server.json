@@ -1,0 +1,23 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/draft/2025-07-09/server.json",
+  "name": "io.github.fieldcure/assiststudio-runner",
+  "description": "Headless LLM task automation engine with scheduling via Windows Task Scheduler.",
+  "packages": [
+    {
+      "registry_name": "nuget",
+      "name": "FieldCure.AssistStudio.Runner",
+      "version": "0.5.0",
+      "runtime": "dotnet",
+      "source": "DotnetTool",
+      "command": "assiststudio-runner",
+      "environment_variables": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/fieldcure/fieldcure-assiststudio-runner",
+    "source": "github"
+  },
+  "version_detail": {
+    "version": "0.5.0"
+  }
+}
