@@ -66,6 +66,8 @@ public static class CreateTaskTool
                 return JsonSerializer.Serialize(new { success = false, error = $"Invalid mcp_servers JSON: {ex.Message}" }, JsonOptions);
             }
 
+            McpServerConfig.ResolveCommands(servers);
+
             // Parse allowed_tools
             List<string>? tools = null;
             if (allowed_tools is not null)

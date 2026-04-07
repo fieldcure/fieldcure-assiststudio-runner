@@ -383,7 +383,9 @@ public sealed class TaskExecutor
                 merged[entry.Name] = entry.ToMcpServerConfig();
         }
 
-        return [.. merged.Values];
+        var result = merged.Values.ToList();
+        McpServerConfig.ResolveCommands(result);
+        return result;
     }
 }
 

@@ -47,4 +47,28 @@ public class McpServerConfig
 
     /// <summary>Whether this server is enabled.</summary>
     public bool IsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Fills in missing commands for Stdio servers using auto-detected installed servers.
+    /// </summary>
+    public static void ResolveCommands(List<McpServerConfig> servers)
+    {
+        var needsResolve = servers.Any(s =>
+            s.TransportType == McpTransportType.Stdio && string.IsNullOrEmpty(s.Command));
+        if (!needsResolve) return;
+
+        var detected = RunnerConfig.DetectInstalledServers()
+            .ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var server in servers)
+        {
+            if (server.TransportType == McpTransportType.Stdio
+                && string.IsNullOrEmpty(server.Command)
+                && detected.TryGetValue(server.Name, out var entry))
+            {
+                server.Command = entry.Command;
+                server.Arguments = [.. entry.Args];
+            }
+        }
+    }
 }

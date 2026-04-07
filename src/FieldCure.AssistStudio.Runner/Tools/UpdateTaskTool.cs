@@ -120,6 +120,7 @@ public static class UpdateTaskTool
                 {
                     return JsonSerializer.Serialize(new { success = false, error = $"Invalid mcp_servers: {ex.Message}" }, JsonOptions);
                 }
+                McpServerConfig.ResolveCommands(task.McpServers);
                 updatedFields.Add("mcp_servers");
             }
 
