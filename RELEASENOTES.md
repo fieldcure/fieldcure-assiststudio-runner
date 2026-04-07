@@ -1,5 +1,9 @@
 ﻿# Release Notes
 
+## v1.1.2
+
+- **Fix: Always override known server commands with auto-detected paths** — known servers (essentials, outbox) always get the system-resolved path regardless of what the LLM provided. Replaces file-existence validation which could not keep up with varied hallucinated paths
+
 ## v1.1.1
 
 - **Fix: Validate command path before skipping auto-resolve** — `ResolveCommands` now checks that absolute command paths exist on disk. LLM-hallucinated paths are replaced with auto-detected installed tool paths instead of failing at exec time
