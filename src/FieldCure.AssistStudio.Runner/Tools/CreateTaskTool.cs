@@ -33,7 +33,7 @@ public static class CreateTaskTool
         string name,
         [Description("Natural language workflow prompt")]
         string prompt,
-        [Description("MCP server configurations (array of objects with id, name, transportType, command, arguments, url, environmentVariableKeys)")]
+        [Description("MCP server configurations as JSON array. Only provide id and name — do NOT include command or arguments, Runner resolves paths automatically. Example: [{\"id\": \"outbox\", \"name\": \"Outbox\"}]")]
         string mcp_servers,
         [Description("Optional description of the task")]
         string? description = null,

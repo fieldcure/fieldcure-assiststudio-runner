@@ -48,7 +48,7 @@ public static class UpdateTaskTool
         string? allowed_tools = null,
         [Description("New provider preset name")]
         string? preset_name = null,
-        [Description("New MCP servers (JSON array)")]
+        [Description("New MCP servers as JSON array. Only provide id and name — do NOT include command or arguments. Example: [{\"id\": \"outbox\", \"name\": \"Outbox\"}]")]
         string? mcp_servers = null,
         [Description("New output channel")]
         string? output_channel = null,
