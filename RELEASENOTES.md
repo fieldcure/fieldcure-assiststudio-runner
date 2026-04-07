@@ -1,5 +1,10 @@
 ﻿# Release Notes
 
+## v1.1.0
+
+- **New: One-time schedule (`schedule_once`)** — `create_task` and `update_task` accept ISO 8601 datetime for one-time execution via schtasks `/SC ONCE`. Use for "5분 후에", "오늘 18시에", "내일 아침 9시" requests. Mutually exclusive with cron `schedule`
+- **Fix: Auto-resolve missing MCP server commands** — `McpServerConfig.ResolveCommands()` fills in missing command paths from auto-detected installed dotnet tools. Applied in CreateTaskTool, UpdateTaskTool (data quality), and TaskExecutor (defensive fallback). Fixes "MCP server is stdio but has no command" when LLM creates tasks with server name only
+
 ## v1.0.0
 
 - **Auto-bootstrap stateless MCP servers** — exec mode auto-detects installed servers (Essentials, Outbox) when no MCP servers are configured, resolving to full paths for PATH-independent execution

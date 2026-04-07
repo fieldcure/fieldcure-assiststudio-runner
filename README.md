@@ -16,7 +16,8 @@ A headless LLM task automation engine that executes natural language tasks on sc
 - **Flexible tool control** — `AllowedTools` null = all tools permitted; explicit list for fine-grained control; empty list = safe tools only
 - **Secure credentials** — API keys in Windows Credential Manager (DPAPI), shared with AssistStudio
 - **Execution logging** — DB summary + detailed JSON logs with full conversation history
-- **Result delivery** — send results via Outbox channels (Slack, Telegram, Email, KakaoTalk)
+- **One-time scheduling** — `schedule_once` with ISO 8601 datetime for single-execution tasks ("5분 후에", "내일 9시에")
+- **Result delivery** — send results via Outbox channels (Slack, Telegram, Email, KakaoTalk, Discord)
 
 ## Installation
 
@@ -177,13 +178,14 @@ User: "What were yesterday's results?"
 
 Cron expressions are automatically mapped to Windows Task Scheduler entries:
 
-| Cron | Schedule | schtasks |
-|------|----------|----------|
-| `*/30 * * * *` | Every 30 minutes | `/SC MINUTE /MO 30` |
-| `0 */2 * * *` | Every 2 hours | `/SC HOURLY /MO 2` |
-| `0 9 * * *` | Daily at 9:00 AM | `/SC DAILY /ST 09:00` |
-| `0 9 * * 1-5` | Weekdays at 9:00 AM | `/SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 09:00` |
-| `0 9 1 * *` | Monthly on the 1st | `/SC MONTHLY /D 1 /ST 09:00` |
+| Schedule | Parameter | schtasks |
+|----------|-----------|----------|
+| Once at specific time | `schedule_once: "2026-04-07T15:30:00+09:00"` | `/SC ONCE /SD 2026/04/07 /ST 15:30` |
+| Every 30 minutes | `schedule: "*/30 * * * *"` | `/SC MINUTE /MO 30` |
+| Every 2 hours | `schedule: "0 */2 * * *"` | `/SC HOURLY /MO 2` |
+| Daily at 9:00 AM | `schedule: "0 9 * * *"` | `/SC DAILY /ST 09:00` |
+| Weekdays at 9:00 AM | `schedule: "0 9 * * 1-5"` | `/SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 09:00` |
+| Monthly on the 1st | `schedule: "0 9 1 * *"` | `/SC MONTHLY /D 1 /ST 09:00` |
 
 ## Data Storage
 

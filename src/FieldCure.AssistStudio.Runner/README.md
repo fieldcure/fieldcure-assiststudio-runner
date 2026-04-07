@@ -1,6 +1,6 @@
 ﻿# FieldCure.AssistStudio.Runner
 
-**Headless LLM task automation engine** — define natural language tasks, schedule them via Windows Task Scheduler, and get results delivered through Slack, Telegram, Email, or KakaoTalk. Runs as an MCP server for task management or standalone for headless execution.
+**Headless LLM task automation engine** — define natural language tasks, schedule them via Windows Task Scheduler (recurring or one-time), and get results delivered through Slack, Telegram, Email, KakaoTalk, or Discord. Runs as an MCP server for task management or standalone for headless execution.
 
 ## Install
 
