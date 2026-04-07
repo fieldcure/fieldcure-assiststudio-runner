@@ -49,38 +49,25 @@ public class McpServerConfig
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
-    /// Fills in missing or invalid commands for Stdio servers using auto-detected installed servers.
-    /// Replaces the command when it is empty or points to a non-existent file.
+    /// Resolves commands for Stdio servers using auto-detected installed servers.
+    /// Known servers always get the auto-detected path regardless of what the LLM provided.
+    /// Unknown servers keep their original command value.
     /// </summary>
     public static void ResolveCommands(List<McpServerConfig> servers)
     {
-        var needsResolve = servers.Any(s =>
-            s.TransportType == McpTransportType.Stdio && !IsCommandValid(s.Command));
-        if (!needsResolve) return;
-
         var detected = RunnerConfig.DetectInstalledServers()
             .ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+        if (detected.Count == 0) return;
 
         foreach (var server in servers)
         {
             if (server.TransportType == McpTransportType.Stdio
-                && !IsCommandValid(server.Command)
                 && detected.TryGetValue(server.Name, out var entry))
             {
+                // Always prefer auto-detected command over LLM-provided value
                 server.Command = entry.Command;
                 server.Arguments = [.. entry.Args];
             }
         }
-    }
-
-    /// <summary>
-    /// Returns true if the command is non-empty and the file exists (for absolute paths).
-    /// Short command names (e.g. on PATH) are assumed valid.
-    /// </summary>
-    private static bool IsCommandValid(string? command)
-    {
-        if (string.IsNullOrEmpty(command)) return false;
-        if (Path.IsPathFullyQualified(command)) return File.Exists(command);
-        return true; // relative or bare command name — assume on PATH
     }
 }
