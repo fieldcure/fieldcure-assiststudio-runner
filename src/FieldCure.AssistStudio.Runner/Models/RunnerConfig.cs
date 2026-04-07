@@ -193,13 +193,20 @@ public sealed class RunnerConfig
         foreach (var (name, command, args) in StatelessServers)
         {
             var exeName = command + ext;
-            if (File.Exists(Path.Combine(globalToolDir, exeName))
-                || File.Exists(Path.Combine(localToolDir, exeName)))
+            var localPath = Path.Combine(localToolDir, exeName);
+            var globalPath = Path.Combine(globalToolDir, exeName);
+
+            // Resolve to full path so exec mode works without PATH
+            string? resolvedCommand = File.Exists(localPath) ? localPath
+                : File.Exists(globalPath) ? globalPath
+                : null;
+
+            if (resolvedCommand is not null)
             {
                 entries.Add(new McpServerEntry
                 {
                     Name = name,
-                    Command = command,
+                    Command = resolvedCommand,
                     Args = [.. args],
                 });
             }

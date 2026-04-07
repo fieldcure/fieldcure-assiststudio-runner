@@ -130,6 +130,10 @@ public sealed class TaskExecutor
             if (loopResult.Status != AgentLoopStatus.Completed)
                 execution.ErrorMessage = loopResult.ErrorMessage;
 
+            // Build round logs from conversation messages
+            if (loopResult.Messages is { Count: > 0 })
+                executionLog.Rounds = BuildRoundLogs(loopResult.Messages);
+
             // ── Phase 5: Notify ─────────────────────────────────────────
             await TryNotifyAsync(task, execution, pool);
         }
@@ -184,6 +188,12 @@ public sealed class TaskExecutor
         return $"""
             You are an autonomous task executor running in headless mode.
             There is no human in the loop — execute the task to completion.
+
+            CONTEXT:
+            - You are invoked by a scheduler (Windows Task Scheduler) on a recurring schedule.
+            - Your job is to execute the task ONCE right now, then exit.
+            - Do NOT attempt to set up scheduling, cron jobs, or recurring automation yourself.
+            - The scheduling is already handled externally — just do the work described below.
 
             RULES:
             - Use only the tools provided. Do not ask for human input.
@@ -278,6 +288,62 @@ public sealed class TaskExecutor
         {
             _logger.LogWarning(ex, "Error cleaning old logs");
         }
+    }
+
+    /// <summary>
+    /// Converts the flat conversation messages into structured round logs.
+    /// Each round = one assistant message + its tool call results.
+    /// </summary>
+    static List<RoundLog> BuildRoundLogs(IReadOnlyList<ChatMessage> messages)
+    {
+        var rounds = new List<RoundLog>();
+        var roundNum = 0;
+
+        for (var i = 0; i < messages.Count; i++)
+        {
+            var msg = messages[i];
+
+            if (msg.Role == ChatRole.Assistant)
+            {
+                roundNum++;
+                var round = new RoundLog
+                {
+                    Round = roundNum,
+                    Response = new RoundMessage
+                    {
+                        Role = "assistant",
+                        Content = msg.Content,
+                        ToolCalls = msg.ToolCalls?.Select(tc => new ToolCallLog
+                        {
+                            Id = tc.Id,
+                            Name = tc.FunctionName,
+                            Arguments = tc.Arguments,
+                        }).ToList(),
+                    },
+                };
+
+                // Collect subsequent tool result messages
+                if (msg.ToolCalls is { Count: > 0 })
+                {
+                    var toolResults = new List<ToolResultLog>();
+                    while (i + 1 < messages.Count && messages[i + 1].Role == ChatRole.Tool)
+                    {
+                        i++;
+                        toolResults.Add(new ToolResultLog
+                        {
+                            ToolCallId = messages[i].ToolCallId ?? "",
+                            Content = messages[i].Content ?? "",
+                        });
+                    }
+                    if (toolResults.Count > 0)
+                        round.ToolResults = toolResults;
+                }
+
+                rounds.Add(round);
+            }
+        }
+
+        return rounds;
     }
 
     /// <summary>
