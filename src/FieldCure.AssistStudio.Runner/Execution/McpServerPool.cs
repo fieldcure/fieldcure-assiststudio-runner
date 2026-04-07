@@ -77,10 +77,10 @@ internal sealed class McpServerPool : IAsyncDisposable
 
                 _toolMap[capturedTool.Name] = adapter;
 
-                // Only expose tools that are in the allowlist or are safe tools
-                if (allowedTools is not null
-                    && (allowedTools.Contains(capturedTool.Name)
-                        || SafeTools.Contains(capturedTool.Name)))
+                // null = all tools allowed; explicit list = filter; empty list = safe tools only
+                if (allowedTools is null
+                    || allowedTools.Contains(capturedTool.Name)
+                    || SafeTools.Contains(capturedTool.Name))
                 {
                     tools.Add(adapter);
                 }

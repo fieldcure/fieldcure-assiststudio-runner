@@ -68,7 +68,8 @@ public sealed class TaskGuardrails
 
     /// <summary>
     /// Allowlist of MCP tool names the LLM may invoke.
-    /// Null means no tools permitted (safety-first default).
+    /// Null means all discovered tools are permitted.
+    /// An explicit empty list means no tools (safe tools only).
     /// </summary>
     public List<string>? AllowedTools { get; set; }
 }

@@ -102,10 +102,11 @@ public sealed class TaskExecutor
 
             // ── Phase 3: LLM Loop (delegated to AgentLoop) ────────────
             var agentLoop = new AgentLoop();
+            var toolNames = tools.Select(t => t.Name).ToList();
             var loopContext = new AgentLoopContext
             {
                 Provider = provider,
-                SystemPrompt = BuildSystemPrompt(task),
+                SystemPrompt = BuildSystemPrompt(task, toolNames),
                 UserPrompt = task.Prompt,
                 Tools = tools.Cast<IAssistTool>().ToList(),
                 MaxRounds = task.Guardrails.MaxRounds,
@@ -174,10 +175,10 @@ public sealed class TaskExecutor
         return execution;
     }
 
-    static string BuildSystemPrompt(RunnerTask task)
+    static string BuildSystemPrompt(RunnerTask task, IReadOnlyList<string> actualTools)
     {
-        var toolsInfo = task.Guardrails.AllowedTools is { Count: > 0 }
-            ? string.Join(", ", task.Guardrails.AllowedTools)
+        var toolsInfo = actualTools.Count > 0
+            ? string.Join(", ", actualTools)
             : "No tools are available.";
 
         return $"""
@@ -282,6 +283,7 @@ public sealed class TaskExecutor
     /// <summary>
     /// Merges default MCP servers from config with task-specific servers.
     /// Task servers take precedence for duplicate names.
+    /// Falls back to auto-detecting installed stateless servers when no servers are configured.
     /// </summary>
     List<McpServerConfig> MergeMcpServers(RunnerTask task)
     {
@@ -295,6 +297,14 @@ public sealed class TaskExecutor
 
         foreach (var server in task.McpServers)
             merged[server.Id] = server; // task-specific servers win
+
+        // Auto-detect installed stateless servers when nothing is configured
+        if (merged.Count == 0)
+        {
+            _logger.LogInformation("No MCP servers configured — auto-detecting installed servers");
+            foreach (var entry in RunnerConfig.DetectInstalledServers())
+                merged[entry.Name] = entry.ToMcpServerConfig();
+        }
 
         return [.. merged.Values];
     }

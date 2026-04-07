@@ -157,31 +157,55 @@ public sealed class RunnerConfig
             BaseUrl = "http://localhost:11434",
         };
 
-        // Auto-detect installed Essentials MCP server
-        var essentialsExeName = OperatingSystem.IsWindows()
-            ? "fieldcure-mcp-essentials.exe"
-            : "fieldcure-mcp-essentials";
-
-        // Check global dotnet tool path
-        var globalToolPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".dotnet", "tools", essentialsExeName);
-
-        // Check AssistStudio's local tool path
-        var localToolPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FieldCure", "AssistStudio", "tools", essentialsExeName);
-
-        if (File.Exists(globalToolPath) || File.Exists(localToolPath))
-        {
-            config.DefaultMcpServers.Add(new McpServerEntry
-            {
-                Name = "essentials",
-                Command = "fieldcure-mcp-essentials",
-            });
-        }
+        config.DefaultMcpServers.AddRange(DetectInstalledServers());
 
         return config;
+    }
+
+    /// <summary>
+    /// Stateless MCP servers that can be auto-detected and bootstrapped
+    /// without per-session context (folders, indexes, etc.).
+    /// </summary>
+    static readonly (string Name, string Command, string[] Args)[] StatelessServers =
+    [
+        ("essentials", "fieldcure-mcp-essentials", []),
+        ("outbox", "fieldcure-mcp-outbox", []),
+    ];
+
+    /// <summary>
+    /// Detects installed stateless dotnet tool MCP servers and returns their entries.
+    /// Checks both global (<c>~/.dotnet/tools/</c>) and local
+    /// (<c>%LOCALAPPDATA%/FieldCure/AssistStudio/tools/</c>) install paths.
+    /// </summary>
+    public static List<McpServerEntry> DetectInstalledServers()
+    {
+        var ext = OperatingSystem.IsWindows() ? ".exe" : "";
+
+        var globalToolDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".dotnet", "tools");
+        var localToolDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FieldCure", "AssistStudio", "tools");
+
+        var entries = new List<McpServerEntry>();
+
+        foreach (var (name, command, args) in StatelessServers)
+        {
+            var exeName = command + ext;
+            if (File.Exists(Path.Combine(globalToolDir, exeName))
+                || File.Exists(Path.Combine(localToolDir, exeName)))
+            {
+                entries.Add(new McpServerEntry
+                {
+                    Name = name,
+                    Command = command,
+                    Args = [.. args],
+                });
+            }
+        }
+
+        return entries;
     }
 
     /// <summary>
