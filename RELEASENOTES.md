@@ -1,5 +1,14 @@
 ﻿# Release Notes
 
+## v1.0.0
+
+- **Auto-bootstrap stateless MCP servers** — exec mode auto-detects installed servers (Essentials, Outbox) when no MCP servers are configured, resolving to full paths for PATH-independent execution
+- **AllowedTools null = all tools** — null means all discovered tools are permitted; explicit empty list means no tools (safe tools only). Breaking change from v0.x where null meant no tools
+- **Round-by-round execution logging** — `ExecutionLog.Rounds` now populated from `AgentLoopResult.Messages` with full tool call arguments and results for audit trails
+- **Scheduler-aware system prompt** — CONTEXT section tells LLM that scheduling is handled externally, preventing it from attempting to set up cron jobs or recurring automation
+- **Full XML documentation** — `GenerateDocumentationFile` enabled, all public and private members documented
+- **Requires FieldCure.Ai.Execution 0.2.0+** for `AgentLoopResult.Messages` support
+
 ## v0.5.0
 
 - **AgentLoop extraction** — LLM execution loop replaced with shared `FieldCure.Ai.Execution.AgentLoop`, eliminating ~120 lines of inline loop code from TaskExecutor

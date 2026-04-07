@@ -66,7 +66,6 @@ Add to `claude_desktop_config.json`:
 ## See Also
 
 Part of the [AssistStudio ecosystem](https://github.com/fieldcure/fieldcure-assiststudio#ecosystem).
-## Links
 
 - [GitHub](https://github.com/fieldcure/fieldcure-assiststudio-runner)
 - [MCP Specification](https://modelcontextprotocol.io)

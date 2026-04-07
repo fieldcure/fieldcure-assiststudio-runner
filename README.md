@@ -13,7 +13,7 @@ A headless LLM task automation engine that executes natural language tasks on sc
 - **Shared AgentLoop** — LLM execution powered by [Ai.Execution](https://www.nuget.org/packages/FieldCure.Ai.Execution) (same loop used by SubAgentExecutor)
 - **Multi-provider LLM support** — Claude, OpenAI, Gemini, Ollama, Groq via [Ai.Providers](https://www.nuget.org/packages/FieldCure.Ai.Providers)
 - **MCP server orchestration** — tasks can bootstrap any MCP servers (Outbox, RAG, Filesystem, custom)
-- **Safety-first tool control** — `AllowedTools` null = no tools; explicit allowlist required for headless execution
+- **Flexible tool control** — `AllowedTools` null = all tools permitted; explicit list for fine-grained control; empty list = safe tools only
 - **Secure credentials** — API keys in Windows Credential Manager (DPAPI), shared with AssistStudio
 - **Execution logging** — DB summary + detailed JSON logs with full conversation history
 - **Result delivery** — send results via Outbox channels (Slack, Telegram, Email, KakaoTalk)
