@@ -1,6 +1,4 @@
-using System.Reflection;
-using System.Text;
-using FieldCure.AssistStudio.Runner.Configuration;
+﻿using FieldCure.AssistStudio.Runner.Configuration;
 using FieldCure.AssistStudio.Runner.Credentials;
 using FieldCure.AssistStudio.Runner.Execution;
 using FieldCure.AssistStudio.Runner.Models;
@@ -9,6 +7,8 @@ using FieldCure.AssistStudio.Runner.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Reflection;
+using System.Text;
 
 if (args.Length > 0)
 {
@@ -28,6 +28,7 @@ return await RunServeAsync();
 
 // ── Serve Mode ──────────────────────────────────────────────────────────────
 
+// Starts the Runner in MCP serve mode (stdio transport).
 async Task<int> RunServeAsync()
 {
     var config = RunnerConfig.Load();
@@ -78,6 +79,7 @@ async Task<int> RunServeAsync()
 
 // ── Exec Mode ───────────────────────────────────────────────────────────────
 
+// Executes a single task headlessly and returns an exit code.
 async Task<int> RunExecAsync(string taskId)
 {
     var config = RunnerConfig.Load();
@@ -127,6 +129,7 @@ async Task<int> RunExecAsync(string taskId)
 
 // ── Usage ───────────────────────────────────────────────────────────────────
 
+// Prints CLI usage information to stderr and returns exit code 1.
 static int PrintUsage()
 {
     Console.Error.WriteLine("AssistStudio Runner — Headless LLM task automation engine");

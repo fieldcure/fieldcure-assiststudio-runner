@@ -1,10 +1,10 @@
-using System.Text.Json;
-using FieldCure.Ai.Providers.Models;
+﻿using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
 using FieldCure.AssistStudio.Runner.Models;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Execution;
 
@@ -20,10 +20,16 @@ internal sealed class McpServerPool : IAsyncDisposable
     /// </summary>
     static readonly HashSet<string> SafeTools = ["get_environment", "run_javascript"];
 
+    /// <summary>Active MCP client connections managed by this pool.</summary>
     readonly List<McpClient> _clients = [];
+
+    /// <summary>Lookup of all discovered tools by name, including those not in the allowlist.</summary>
     readonly Dictionary<string, McpToolAdapter> _toolMap = new();
+
+    /// <summary>Logger instance for MCP server diagnostics.</summary>
     readonly ILogger _logger;
 
+    /// <summary>Initializes a new <see cref="McpServerPool"/> with the specified logger.</summary>
     internal McpServerPool(ILogger logger)
     {
         _logger = logger;
@@ -99,6 +105,7 @@ internal sealed class McpServerPool : IAsyncDisposable
     public McpToolAdapter? GetTool(string toolName) =>
         _toolMap.TryGetValue(toolName, out var adapter) ? adapter : null;
 
+    /// <summary>Creates and connects an MCP client for the given server configuration.</summary>
     static async Task<McpClient> CreateClientAsync(
         McpServerConfig config, ICredentialService credentialService)
     {
@@ -144,6 +151,7 @@ internal sealed class McpServerPool : IAsyncDisposable
         return await McpClient.CreateAsync(transport);
     }
 
+    /// <summary>Converts a <see cref="JsonElement"/> object into a dictionary for MCP tool invocation.</summary>
     static Dictionary<string, object?> ConvertJsonArguments(JsonElement arguments)
     {
         var argsDict = new Dictionary<string, object?>();
@@ -155,6 +163,7 @@ internal sealed class McpServerPool : IAsyncDisposable
         return argsDict;
     }
 
+    /// <summary>Recursively converts a <see cref="JsonElement"/> to a CLR object.</summary>
     static object? ConvertJsonElement(JsonElement element) => element.ValueKind switch
     {
         JsonValueKind.String => element.GetString(),
@@ -168,6 +177,7 @@ internal sealed class McpServerPool : IAsyncDisposable
         _ => element.GetRawText(),
     };
 
+    /// <summary>Extracts concatenated text content from an MCP tool call result.</summary>
     static string ExtractTextResult(CallToolResult result)
     {
         if (result.Content is { Count: > 0 } content)
@@ -180,6 +190,7 @@ internal sealed class McpServerPool : IAsyncDisposable
         return result.IsError == true ? """{"error": true}""" : "{}";
     }
 
+    /// <summary>Disposes all MCP client connections and clears internal state.</summary>
     public async ValueTask DisposeAsync()
     {
         foreach (var client in _clients)

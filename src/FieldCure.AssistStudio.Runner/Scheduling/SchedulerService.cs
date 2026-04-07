@@ -1,7 +1,7 @@
+﻿using FieldCure.AssistStudio.Runner.Models;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Runtime.Versioning;
-using FieldCure.AssistStudio.Runner.Models;
-using Microsoft.Extensions.Logging;
 
 namespace FieldCure.AssistStudio.Runner.Scheduling;
 
@@ -11,11 +11,16 @@ namespace FieldCure.AssistStudio.Runner.Scheduling;
 [SupportedOSPlatform("windows")]
 public sealed class SchedulerService
 {
+    /// <summary>Prefix for all Runner task names registered in Windows Task Scheduler.</summary>
     const string TaskNamePrefix = "AssistStudio_Runner_";
 
+    /// <summary>Global runner configuration for resolving tool paths.</summary>
     readonly RunnerConfig _config;
+
+    /// <summary>Logger instance for scheduler diagnostics.</summary>
     readonly ILogger<SchedulerService> _logger;
 
+    /// <summary>Initializes a new <see cref="SchedulerService"/> with configuration and logger.</summary>
     public SchedulerService(RunnerConfig config, ILogger<SchedulerService> logger)
     {
         _config = config;
@@ -70,6 +75,7 @@ public sealed class SchedulerService
         return await RunSchtasksAsync($"/CHANGE /TN \"{taskName}\" {flag}");
     }
 
+    /// <summary>Resolves the absolute path to the assiststudio-runner executable.</summary>
     string ResolveToolPath()
     {
         if (!string.IsNullOrEmpty(_config.ToolPath))
@@ -92,6 +98,7 @@ public sealed class SchedulerService
         return "assiststudio-runner";
     }
 
+    /// <summary>Runs schtasks.exe with the given arguments and returns the result.</summary>
     async Task<ScheduleResult> RunSchtasksAsync(string arguments)
     {
         try

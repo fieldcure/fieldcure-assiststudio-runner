@@ -1,5 +1,4 @@
-using System.Text;
-using FieldCure.AssistStudio.Runner.Credentials;
+﻿using FieldCure.AssistStudio.Runner.Credentials;
 using FieldCure.AssistStudio.Runner.Models;
 
 namespace FieldCure.AssistStudio.Runner.Configuration;
@@ -9,6 +8,7 @@ namespace FieldCure.AssistStudio.Runner.Configuration;
 /// </summary>
 public static class ConfigRunner
 {
+    /// <summary>Dispatches a config subcommand (init, set-credential, get-credential).</summary>
     public static int Run(string[] args)
     {
         if (args.Length == 0)
@@ -89,6 +89,7 @@ public static class ConfigRunner
         return 0;
     }
 
+    /// <summary>Stores a credential (API key or MCP env var) in Windows Credential Manager.</summary>
     static int RunSetCredential(string[] args)
     {
         if (args.Length < 2)
@@ -121,6 +122,7 @@ public static class ConfigRunner
         return 0;
     }
 
+    /// <summary>Retrieves and displays a masked credential from Windows Credential Manager.</summary>
     static int RunGetCredential(string[] args)
     {
         if (args.Length < 1)
@@ -163,6 +165,7 @@ public static class ConfigRunner
         return 0;
     }
 
+    /// <summary>Prints CLI usage help for config subcommands and returns exit code 1.</summary>
     static int PrintUsage()
     {
         Console.Error.WriteLine("Usage:");

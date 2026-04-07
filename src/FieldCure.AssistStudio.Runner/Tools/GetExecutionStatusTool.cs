@@ -1,10 +1,11 @@
+﻿using FieldCure.AssistStudio.Runner.Storage;
+using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Text.Json;
-using FieldCure.AssistStudio.Runner.Storage;
-using ModelContextProtocol.Server;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for checking the status of an ongoing or completed execution.</summary>
 [McpServerToolType]
 public static class GetExecutionStatusTool
 {
@@ -14,6 +15,7 @@ public static class GetExecutionStatusTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="GetExecutionStatusTool"/>
     [McpServerTool(Name = "get_execution_status")]
     [Description(
         "Checks the current status of a task execution. " +

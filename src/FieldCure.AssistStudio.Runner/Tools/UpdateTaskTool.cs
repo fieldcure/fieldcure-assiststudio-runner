@@ -1,13 +1,13 @@
-using System.ComponentModel;
-using System.Text.Json;
-using FieldCure.Ai.Providers.Models;
-using FieldCure.AssistStudio.Runner.Models;
+﻿using FieldCure.AssistStudio.Runner.Models;
 using FieldCure.AssistStudio.Runner.Scheduling;
 using FieldCure.AssistStudio.Runner.Storage;
 using ModelContextProtocol.Server;
+using System.ComponentModel;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for partially updating a task's definition, schedule, or configuration.</summary>
 [McpServerToolType]
 public static class UpdateTaskTool
 {
@@ -17,6 +17,7 @@ public static class UpdateTaskTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="UpdateTaskTool"/>
     [McpServerTool(Name = "update_task", Destructive = true)]
     [Description(
         "Updates an existing Runner task. Only provided fields are changed (partial update). " +

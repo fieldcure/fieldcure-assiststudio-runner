@@ -1,14 +1,14 @@
-using System.ComponentModel;
-using System.Text.Json;
-using FieldCure.Ai.Providers.Models;
-using FieldCure.AssistStudio.Runner.Credentials;
+﻿using FieldCure.AssistStudio.Runner.Credentials;
 using FieldCure.AssistStudio.Runner.Models;
 using FieldCure.AssistStudio.Runner.Scheduling;
 using FieldCure.AssistStudio.Runner.Storage;
 using ModelContextProtocol.Server;
+using System.ComponentModel;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for creating a new Runner task with prompt, schedule, and configuration.</summary>
 [McpServerToolType]
 public static class CreateTaskTool
 {
@@ -18,6 +18,7 @@ public static class CreateTaskTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="CreateTaskTool"/>
     [McpServerTool(Name = "create_task", Destructive = true)]
     [Description(
         "Creates a new Runner task with the given prompt, schedule, and configuration. " +

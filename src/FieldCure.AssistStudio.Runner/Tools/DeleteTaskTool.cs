@@ -1,12 +1,13 @@
-using System.ComponentModel;
-using System.Text.Json;
-using FieldCure.AssistStudio.Runner.Models;
+﻿using FieldCure.AssistStudio.Runner.Models;
 using FieldCure.AssistStudio.Runner.Scheduling;
 using FieldCure.AssistStudio.Runner.Storage;
 using ModelContextProtocol.Server;
+using System.ComponentModel;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for deleting a task, its execution history, and scheduler entry.</summary>
 [McpServerToolType]
 public static class DeleteTaskTool
 {
@@ -16,6 +17,7 @@ public static class DeleteTaskTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="DeleteTaskTool"/>
     [McpServerTool(Name = "delete_task", Destructive = true)]
     [Description(
         "Deletes a Runner task and all its execution history. " +

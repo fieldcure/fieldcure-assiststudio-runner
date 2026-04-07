@@ -1,10 +1,11 @@
+﻿using FieldCure.AssistStudio.Runner.Storage;
+using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Text.Json;
-using FieldCure.AssistStudio.Runner.Storage;
-using ModelContextProtocol.Server;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for listing all tasks with optional filtering.</summary>
 [McpServerToolType]
 public static class ListTasksTool
 {
@@ -14,6 +15,7 @@ public static class ListTasksTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="ListTasksTool"/>
     [McpServerTool(Name = "list_tasks")]
     [Description(
         "Lists all Runner tasks with optional filtering. " +

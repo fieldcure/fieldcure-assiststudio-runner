@@ -12,19 +12,28 @@ namespace FieldCure.AssistStudio.Runner.Credentials;
 [SupportedOSPlatform("windows")]
 public sealed class CredentialService : ICredentialService
 {
+    /// <summary>Windows Credential Manager resource/target prefix.</summary>
     const string Resource = "FieldCure.AssistStudio";
+
+    /// <summary>CRED_TYPE_GENERIC value for Windows Credential Manager.</summary>
     const int CredTypeGeneric = 1;
+
+    /// <summary>CRED_PERSIST_LOCAL_MACHINE value for Windows Credential Manager.</summary>
     const int CredPersistLocalMachine = 2;
 
+    /// <inheritdoc />
     public string? GetApiKey(string presetName) =>
         RetrieveByUserName(presetName);
 
+    /// <inheritdoc />
     public void SetApiKey(string presetName, string apiKey) =>
         Store(presetName, apiKey);
 
+    /// <inheritdoc />
     public string? GetMcpEnvVar(string serverId, string key) =>
         RetrieveByUserName($"McpEnv_{serverId}_{key}");
 
+    /// <inheritdoc />
     public void SetMcpEnvVar(string serverId, string key, string value) =>
         Store($"McpEnv_{serverId}_{key}", value);
 
@@ -133,30 +142,46 @@ public sealed class CredentialService : ICredentialService
     #region P/Invoke
 
 #pragma warning disable SYSLIB1054
+    /// <summary>Writes a credential to Windows Credential Manager.</summary>
     [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern bool CredWrite(ref CREDENTIAL credential, uint flags);
 
+    /// <summary>Enumerates credentials matching a filter in Windows Credential Manager.</summary>
     [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     static extern bool CredEnumerate(string? filter, int flags, out int count, out IntPtr credentials);
 
+    /// <summary>Frees a credential buffer allocated by the Credential Manager.</summary>
     [DllImport("advapi32.dll", SetLastError = true)]
     static extern void CredFree(IntPtr buffer);
 #pragma warning restore SYSLIB1054
 
+    /// <summary>Interop structure matching the native CREDENTIAL layout.</summary>
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     struct CREDENTIAL
     {
+        /// <summary>Reserved flags.</summary>
         public uint Flags;
+        /// <summary>Credential type (e.g., CRED_TYPE_GENERIC).</summary>
         public int Type;
+        /// <summary>Target name identifying the credential entry.</summary>
         public string TargetName;
+        /// <summary>Optional comment associated with the credential.</summary>
         public string Comment;
+        /// <summary>Timestamp of last modification (FILETIME).</summary>
         public long LastWritten;
+        /// <summary>Size of the credential blob in bytes.</summary>
         public uint CredentialBlobSize;
+        /// <summary>Pointer to the credential secret data.</summary>
         public IntPtr CredentialBlob;
+        /// <summary>Persistence scope (e.g., CRED_PERSIST_LOCAL_MACHINE).</summary>
         public int Persist;
+        /// <summary>Number of extended attributes.</summary>
         public uint AttributeCount;
+        /// <summary>Pointer to extended attribute array.</summary>
         public IntPtr Attributes;
+        /// <summary>Alias for the target name.</summary>
         public string TargetAlias;
+        /// <summary>User name associated with the credential.</summary>
         public string UserName;
     }
 

@@ -1,6 +1,4 @@
-using FieldCure.Ai.Providers.Models;
-
-namespace FieldCure.AssistStudio.Runner.Models;
+﻿namespace FieldCure.AssistStudio.Runner.Models;
 
 /// <summary>
 /// Represents a Runner task definition.
@@ -51,7 +49,10 @@ public sealed class RunnerTask
     /// </summary>
     public string? OutputChannel { get; set; }
 
+    /// <summary>Timestamp when this task was created.</summary>
     public DateTimeOffset CreatedAt { get; init; }
+
+    /// <summary>Timestamp when this task was last modified.</summary>
     public DateTimeOffset UpdatedAt { get; set; }
 }
 

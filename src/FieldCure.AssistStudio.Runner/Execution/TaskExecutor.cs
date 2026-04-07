@@ -1,11 +1,11 @@
-using System.Text.Json;
-using FieldCure.Ai.Execution;
+﻿using FieldCure.Ai.Execution;
 using FieldCure.Ai.Providers;
 using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
 using FieldCure.AssistStudio.Runner.Models;
 using FieldCure.AssistStudio.Runner.Storage;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Execution;
 
@@ -16,11 +16,19 @@ namespace FieldCure.AssistStudio.Runner.Execution;
 /// </summary>
 public sealed class TaskExecutor
 {
+    /// <summary>Persistent store for task definitions and execution records.</summary>
     readonly TaskStore _taskStore;
+
+    /// <summary>Global runner configuration loaded from runner.json.</summary>
     readonly RunnerConfig _globalConfig;
+
+    /// <summary>Service for retrieving API keys and MCP credentials from PasswordVault.</summary>
     readonly ICredentialService _credentialService;
+
+    /// <summary>Logger instance for execution diagnostics.</summary>
     readonly ILogger<TaskExecutor> _logger;
 
+    /// <summary>Initializes a new <see cref="TaskExecutor"/> with required dependencies.</summary>
     public TaskExecutor(
         TaskStore taskStore,
         RunnerConfig globalConfig,
@@ -179,6 +187,7 @@ public sealed class TaskExecutor
         return execution;
     }
 
+    /// <summary>Builds the system prompt for the agent loop, including guardrails and tool list.</summary>
     static string BuildSystemPrompt(RunnerTask task, IReadOnlyList<string> actualTools)
     {
         var toolsInfo = actualTools.Count > 0
@@ -204,6 +213,7 @@ public sealed class TaskExecutor
             """;
     }
 
+    /// <summary>Sends a notification via the task's output channel, with fallback on failure.</summary>
     async Task TryNotifyAsync(RunnerTask task, TaskExecution execution, McpServerPool pool)
     {
         if (string.IsNullOrEmpty(task.OutputChannel))
@@ -265,6 +275,7 @@ public sealed class TaskExecutor
         }
     }
 
+    /// <summary>Deletes execution log files older than the configured retention period.</summary>
     void CleanOldLogs(string dataDir)
     {
         if (_globalConfig.LogRetentionDays <= 0) return;
@@ -379,13 +390,19 @@ public sealed class TaskExecutor
 /// <summary>Thrown when a task is not found in the store.</summary>
 public sealed class TaskNotFoundException : Exception
 {
+    /// <summary>The ID of the task that was not found.</summary>
     public string TaskId { get; }
+
+    /// <summary>Initializes a new instance with the missing task ID.</summary>
     public TaskNotFoundException(string taskId) : base($"Task '{taskId}' not found.") => TaskId = taskId;
 }
 
 /// <summary>Thrown when a task already has a running execution.</summary>
 public sealed class AlreadyRunningException : Exception
 {
+    /// <summary>The ID of the task that is already running.</summary>
     public string TaskId { get; }
+
+    /// <summary>Initializes a new instance with the conflicting task ID.</summary>
     public AlreadyRunningException(string taskId) : base($"Task '{taskId}' already has a running execution.") => TaskId = taskId;
 }

@@ -1,8 +1,6 @@
-using System.Text.Json;
-using FieldCure.AssistStudio.Runner.Models;
-using FieldCure.AssistStudio.Runner.Storage;
-using ModelContextProtocol.Client;
+﻿using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Tests;
 

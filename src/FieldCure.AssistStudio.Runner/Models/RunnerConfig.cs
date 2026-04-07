@@ -1,8 +1,8 @@
+﻿using FieldCure.Ai.Providers.Models;
+using FieldCure.AssistStudio.Runner.Credentials;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FieldCure.Ai.Providers.Models;
-using FieldCure.AssistStudio.Runner.Credentials;
 
 namespace FieldCure.AssistStudio.Runner.Models;
 
@@ -11,6 +11,7 @@ namespace FieldCure.AssistStudio.Runner.Models;
 /// </summary>
 public sealed class RunnerConfig
 {
+    /// <summary>Shared JSON serializer options for runner.json read/write.</summary>
     static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -66,6 +67,7 @@ public sealed class RunnerConfig
         return null;
     }
 
+    /// <summary>Converts a <see cref="PresetConfig"/> to a <see cref="ProviderPreset"/> instance.</summary>
     static ProviderPreset ToPreset(string name, PresetConfig config) => new()
     {
         Name = name,

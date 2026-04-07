@@ -3,7 +3,19 @@ namespace FieldCure.AssistStudio.Runner.Scheduling;
 /// <summary>
 /// Supported schedule types mappable to schtasks.
 /// </summary>
-public enum ScheduleType { Minute, Hourly, Daily, Weekly, Monthly }
+public enum ScheduleType
+{
+    /// <summary>Every N minutes.</summary>
+    Minute,
+    /// <summary>Every N hours.</summary>
+    Hourly,
+    /// <summary>Once per day.</summary>
+    Daily,
+    /// <summary>On specified days of the week.</summary>
+    Weekly,
+    /// <summary>On a specified day of the month.</summary>
+    Monthly,
+}
 
 /// <summary>
 /// Structured schtasks trigger information.

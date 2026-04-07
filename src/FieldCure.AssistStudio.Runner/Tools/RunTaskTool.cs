@@ -1,12 +1,12 @@
-using System.ComponentModel;
-using System.Text.Json;
-using FieldCure.AssistStudio.Runner.Execution;
-using FieldCure.AssistStudio.Runner.Models;
+﻿using FieldCure.AssistStudio.Runner.Execution;
 using FieldCure.AssistStudio.Runner.Storage;
 using ModelContextProtocol.Server;
+using System.ComponentModel;
+using System.Text.Json;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for triggering immediate execution of a task.</summary>
 [McpServerToolType]
 public static class RunTaskTool
 {
@@ -16,6 +16,7 @@ public static class RunTaskTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="RunTaskTool"/>
     [McpServerTool(Name = "run_task", Destructive = true)]
     [Description(
         "Starts execution of a Runner task. By default returns immediately with the execution ID " +

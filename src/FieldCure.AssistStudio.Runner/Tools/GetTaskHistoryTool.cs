@@ -1,10 +1,11 @@
+﻿using FieldCure.AssistStudio.Runner.Storage;
+using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Text.Json;
-using FieldCure.AssistStudio.Runner.Storage;
-using ModelContextProtocol.Server;
 
 namespace FieldCure.AssistStudio.Runner.Tools;
 
+/// <summary>MCP tool for retrieving execution history of a task.</summary>
 [McpServerToolType]
 public static class GetTaskHistoryTool
 {
@@ -14,6 +15,7 @@ public static class GetTaskHistoryTool
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
+    /// <inheritdoc cref="GetTaskHistoryTool"/>
     [McpServerTool(Name = "get_task_history")]
     [Description(
         "Retrieves execution history for a Runner task. " +

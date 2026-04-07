@@ -1,8 +1,7 @@
+﻿using FieldCure.AssistStudio.Runner.Models;
+using Microsoft.Data.Sqlite;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FieldCure.Ai.Providers.Models;
-using FieldCure.AssistStudio.Runner.Models;
-using Microsoft.Data.Sqlite;
 
 namespace FieldCure.AssistStudio.Runner.Storage;
 
@@ -12,15 +11,20 @@ namespace FieldCure.AssistStudio.Runner.Storage;
 /// </summary>
 public sealed class TaskStore : IDisposable
 {
+    /// <summary>Shared JSON serialization options for task and execution data.</summary>
     static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    /// <summary>SQLite connection string for the runner database.</summary>
     readonly string _connectionString;
-    SqliteConnection? _keepAlive; // Holds in-memory DBs alive
 
+    /// <summary>Keep-alive connection to prevent in-memory databases from being disposed.</summary>
+    SqliteConnection? _keepAlive;
+
+    /// <summary>Initializes a new <see cref="TaskStore"/> using a file-based database in the given directory.</summary>
     public TaskStore(string dataDirectory)
     {
         Directory.CreateDirectory(dataDirectory);
@@ -45,6 +49,7 @@ public sealed class TaskStore : IDisposable
         Initialize();
     }
 
+    /// <summary>Creates database tables and applies schema migrations.</summary>
     void Initialize()
     {
         using var conn = Open();
@@ -99,6 +104,7 @@ public sealed class TaskStore : IDisposable
         catch (SqliteException) { /* column already exists */ }
     }
 
+    /// <summary>Opens a new SQLite connection with foreign keys enabled.</summary>
     SqliteConnection Open()
     {
         var conn = new SqliteConnection(_connectionString);
@@ -112,6 +118,7 @@ public sealed class TaskStore : IDisposable
 
     #region Task CRUD
 
+    /// <summary>Retrieves a task by its unique identifier.</summary>
     public async Task<RunnerTask?> GetTaskAsync(string id)
     {
         using var conn = Open();
@@ -123,6 +130,7 @@ public sealed class TaskStore : IDisposable
         return await reader.ReadAsync() ? ReadTask(reader) : null;
     }
 
+    /// <summary>Retrieves all tasks, optionally filtered by enabled status and schedule presence.</summary>
     public async Task<List<RunnerTask>> GetAllTasksAsync(string? statusFilter = null, bool? hasSchedule = null)
     {
         using var conn = Open();
@@ -150,6 +158,7 @@ public sealed class TaskStore : IDisposable
         return tasks;
     }
 
+    /// <summary>Inserts a new task into the database.</summary>
     public async Task InsertTaskAsync(RunnerTask task)
     {
         using var conn = Open();
@@ -185,6 +194,7 @@ public sealed class TaskStore : IDisposable
         await cmd.ExecuteNonQueryAsync();
     }
 
+    /// <summary>Updates an existing task in the database.</summary>
     public async Task UpdateTaskAsync(RunnerTask task)
     {
         using var conn = Open();
@@ -262,6 +272,7 @@ public sealed class TaskStore : IDisposable
 
     #region Execution CRUD
 
+    /// <summary>Inserts a new execution record into the database.</summary>
     public async Task InsertExecutionAsync(TaskExecution execution)
     {
         using var conn = Open();
@@ -288,6 +299,7 @@ public sealed class TaskStore : IDisposable
         await cmd.ExecuteNonQueryAsync();
     }
 
+    /// <summary>Updates an existing execution record with final status and results.</summary>
     public async Task UpdateExecutionAsync(TaskExecution execution)
     {
         using var conn = Open();
@@ -313,6 +325,7 @@ public sealed class TaskStore : IDisposable
         await cmd.ExecuteNonQueryAsync();
     }
 
+    /// <summary>Retrieves an execution record by its unique identifier.</summary>
     public async Task<TaskExecution?> GetExecutionAsync(string id)
     {
         using var conn = Open();
@@ -324,6 +337,7 @@ public sealed class TaskStore : IDisposable
         return await reader.ReadAsync() ? ReadExecution(reader) : null;
     }
 
+    /// <summary>Retrieves execution history for a task, ordered by most recent first.</summary>
     public async Task<List<TaskExecution>> GetExecutionsAsync(
         string taskId, int limit = 10, string? statusFilter = null)
     {
@@ -348,6 +362,7 @@ public sealed class TaskStore : IDisposable
         return executions;
     }
 
+    /// <summary>Retrieves the most recent execution record for a task.</summary>
     public async Task<TaskExecution?> GetLatestExecutionAsync(string taskId)
     {
         using var conn = Open();
@@ -359,6 +374,7 @@ public sealed class TaskStore : IDisposable
         return await reader.ReadAsync() ? ReadExecution(reader) : null;
     }
 
+    /// <summary>Checks whether the specified task has an execution currently in progress.</summary>
     public async Task<bool> HasRunningExecutionAsync(string taskId)
     {
         using var conn = Open();
@@ -370,6 +386,7 @@ public sealed class TaskStore : IDisposable
         return count > 0;
     }
 
+    /// <summary>Returns the total number of executions for a task.</summary>
     public async Task<int> GetExecutionCountAsync(string taskId)
     {
         using var conn = Open();
@@ -384,6 +401,7 @@ public sealed class TaskStore : IDisposable
 
     #region Mapping
 
+    /// <summary>Maps a database row to a <see cref="RunnerTask"/> instance.</summary>
     static RunnerTask ReadTask(SqliteDataReader reader)
     {
         var allowedToolsJson = reader.IsDBNull(reader.GetOrdinal("AllowedTools"))
@@ -421,6 +439,7 @@ public sealed class TaskStore : IDisposable
         };
     }
 
+    /// <summary>Maps a database row to a <see cref="TaskExecution"/> instance.</summary>
     static TaskExecution ReadExecution(SqliteDataReader reader)
     {
         return new TaskExecution
@@ -445,6 +464,7 @@ public sealed class TaskStore : IDisposable
 
     #endregion
 
+    /// <summary>Releases the keep-alive connection for in-memory databases.</summary>
     public void Dispose()
     {
         _keepAlive?.Dispose();

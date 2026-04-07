@@ -9,6 +9,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
 
     <Version>0.5.0</Version>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
 

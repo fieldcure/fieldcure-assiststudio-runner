@@ -6,6 +6,7 @@ namespace FieldCure.AssistStudio.Runner.Scheduling;
 /// </summary>
 public static class CronToSchtasks
 {
+    /// <summary>Maps cron day-of-week numbers (0-7) to schtasks day abbreviations.</summary>
     static readonly Dictionary<string, string> DayMap = new()
     {
         ["0"] = "SUN", ["1"] = "MON", ["2"] = "TUE", ["3"] = "WED",
@@ -104,6 +105,7 @@ public static class CronToSchtasks
             "Supported: */N * * * *, 0 */N * * *, M H * * *, M H * * dow, M H D * *");
     }
 
+    /// <summary>Parses a cron day-of-week field (ranges and lists) into schtasks day names.</summary>
     static string[] ParseDays(string dow, string cron)
     {
         var result = new List<string>();
@@ -144,8 +146,10 @@ public static class CronToSchtasks
 /// </summary>
 public sealed class UnsupportedScheduleException : Exception
 {
+    /// <summary>The cron expression that could not be mapped.</summary>
     public string CronExpression { get; }
 
+    /// <summary>Initializes a new instance with the unsupported cron expression and reason.</summary>
     public UnsupportedScheduleException(string cron, string reason)
         : base($"Cannot map cron '{cron}' to schtasks: {reason}")
     {
