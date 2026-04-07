@@ -63,6 +63,12 @@ Add to `claude_desktop_config.json`:
 - [FieldCure.Ai.Providers](https://www.nuget.org/packages/FieldCure.Ai.Providers) (bundled)
 - [FieldCure.Ai.Execution](https://www.nuget.org/packages/FieldCure.Ai.Execution) (bundled)
 
+## Designed for AssistStudio
+
+Runner is purpose-built for the AssistStudio ecosystem. Tasks are typically created through natural language conversations in AssistStudio, which handles workflow design, MCP server selection, and tool permissions automatically.
+
+While Runner can be used standalone with Claude Desktop or VS Code (via `serve` mode), you'll need to construct task parameters (prompt, MCP servers, allowed tools) manually. For the full experience, use [AssistStudio](https://github.com/fieldcure/fieldcure-assiststudio).
+
 ## See Also
 
 Part of the [AssistStudio ecosystem](https://github.com/fieldcure/fieldcure-assiststudio#ecosystem).
