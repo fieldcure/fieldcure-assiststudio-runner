@@ -1,5 +1,9 @@
 ﻿# Release Notes
 
+## v1.1.3
+
+- **Fix: Guide LLM to omit command in mcp_servers** — tool descriptions now instruct LLM to provide only `id` and `name`, preventing hallucinated command paths at the source
+
 ## v1.1.2
 
 - **Fix: Always override known server commands with auto-detected paths** — known servers (essentials, outbox) always get the system-resolved path regardless of what the LLM provided. Replaces file-existence validation which could not keep up with varied hallucinated paths
