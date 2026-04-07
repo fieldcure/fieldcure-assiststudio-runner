@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v1.1.0: One-time schedule (schedule_once), auto-resolve missing MCP server commands.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.1.1: Validate command file exists before skipping auto-resolve.</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>

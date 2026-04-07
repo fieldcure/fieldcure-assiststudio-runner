@@ -1,5 +1,9 @@
 ﻿# Release Notes
 
+## v1.1.1
+
+- **Fix: Validate command path before skipping auto-resolve** — `ResolveCommands` now checks that absolute command paths exist on disk. LLM-hallucinated paths are replaced with auto-detected installed tool paths instead of failing at exec time
+
 ## v1.1.0
 
 - **New: One-time schedule (`schedule_once`)** — `create_task` and `update_task` accept ISO 8601 datetime for one-time execution via schtasks `/SC ONCE`. Use for "5분 후에", "오늘 18시에", "내일 아침 9시" requests. Mutually exclusive with cron `schedule`
