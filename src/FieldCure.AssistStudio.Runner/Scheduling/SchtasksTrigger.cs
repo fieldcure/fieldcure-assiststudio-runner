@@ -5,6 +5,8 @@ namespace FieldCure.AssistStudio.Runner.Scheduling;
 /// </summary>
 public enum ScheduleType
 {
+    /// <summary>Runs once at a specified date and time.</summary>
+    Once,
     /// <summary>Every N minutes.</summary>
     Minute,
     /// <summary>Every N hours.</summary>
@@ -26,6 +28,7 @@ public sealed record SchtasksTrigger(
     string StartTime,
     string[]? Days = null,
     int? DayOfMonth = null,
+    string? StartDate = null,
     string? Description = null)
 {
     /// <summary>
@@ -33,6 +36,8 @@ public sealed record SchtasksTrigger(
     /// </summary>
     public string ToSchtasksArgs() => Type switch
     {
+        ScheduleType.Once when StartDate is not null =>
+            $"/SC ONCE /SD {StartDate} /ST {StartTime}",
         ScheduleType.Minute => $"/SC MINUTE /MO {Interval}",
         ScheduleType.Hourly => $"/SC HOURLY /MO {Interval} /ST {StartTime}",
         ScheduleType.Daily => $"/SC DAILY /ST {StartTime}",

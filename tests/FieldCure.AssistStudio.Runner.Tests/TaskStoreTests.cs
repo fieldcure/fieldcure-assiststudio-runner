@@ -186,4 +186,57 @@ public class TaskStoreTests
         var loaded = await store.GetTaskAsync(task.Id);
         Assert.IsNull(loaded!.Guardrails.AllowedTools);
     }
+
+    [TestMethod]
+    public async Task ScheduleOnce_RoundTrips()
+    {
+        using var store = CreateInMemoryStore();
+        var task = CreateSampleTask();
+        task.ScheduleOnce = new DateTimeOffset(2026, 4, 7, 15, 21, 0, TimeSpan.FromHours(9));
+        await store.InsertTaskAsync(task);
+
+        var loaded = await store.GetTaskAsync(task.Id);
+        Assert.IsNotNull(loaded);
+        Assert.IsNotNull(loaded.ScheduleOnce);
+        Assert.IsNull(loaded.Schedule);
+        Assert.AreEqual(2026, loaded.ScheduleOnce.Value.Year);
+        Assert.AreEqual(4, loaded.ScheduleOnce.Value.Month);
+        Assert.AreEqual(7, loaded.ScheduleOnce.Value.Day);
+    }
+
+    [TestMethod]
+    public async Task ScheduleOnce_Null_RoundTrips()
+    {
+        using var store = CreateInMemoryStore();
+        var task = CreateSampleTask();
+        task.ScheduleOnce = null;
+        await store.InsertTaskAsync(task);
+
+        var loaded = await store.GetTaskAsync(task.Id);
+        Assert.IsNotNull(loaded);
+        Assert.IsNull(loaded.ScheduleOnce);
+    }
+
+    [TestMethod]
+    public async Task GetAllTasks_FilterHasSchedule_IncludesOnce()
+    {
+        using var store = CreateInMemoryStore();
+
+        var cronTask = CreateSampleTask();
+        cronTask.Schedule = "0 9 * * *";
+        await store.InsertTaskAsync(cronTask);
+
+        var onceTask = CreateSampleTask();
+        onceTask.ScheduleOnce = DateTimeOffset.UtcNow.AddHours(1);
+        await store.InsertTaskAsync(onceTask);
+
+        var manualTask = CreateSampleTask();
+        await store.InsertTaskAsync(manualTask);
+
+        var scheduled = await store.GetAllTasksAsync(hasSchedule: true);
+        Assert.AreEqual(2, scheduled.Count);
+
+        var unscheduled = await store.GetAllTasksAsync(hasSchedule: false);
+        Assert.AreEqual(1, unscheduled.Count);
+    }
 }

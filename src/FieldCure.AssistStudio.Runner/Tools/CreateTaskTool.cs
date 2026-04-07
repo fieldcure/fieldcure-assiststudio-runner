@@ -37,8 +37,10 @@ public static class CreateTaskTool
         string mcp_servers,
         [Description("Optional description of the task")]
         string? description = null,
-        [Description("Cron expression for scheduled execution (e.g. '0 9 * * 1-5' for weekdays at 9am). Null = manual only.")]
+        [Description("Cron expression for recurring execution (e.g. '0 9 * * 1-5' for weekdays at 9am). Mutually exclusive with schedule_once. Null = manual only.")]
         string? schedule = null,
+        [Description("ISO 8601 datetime for one-time execution (e.g. '2026-04-07T15:30:00+09:00'). Use for '~후에', '오늘', '내일' requests. Mutually exclusive with schedule.")]
+        string? schedule_once = null,
         [Description("Maximum LLM interaction rounds (default: 10)")]
         int? max_rounds = null,
         [Description("Execution timeout in seconds (default: 300)")]
@@ -82,7 +84,10 @@ public static class CreateTaskTool
                 }
             }
 
-            // Validate cron if present
+            // Validate schedule: cron and schedule_once are mutually exclusive
+            if (schedule is not null && schedule_once is not null)
+                return JsonSerializer.Serialize(new { success = false, error = "Cannot specify both 'schedule' (cron) and 'schedule_once'. Use one or the other." }, JsonOptions);
+
             if (schedule is not null)
             {
                 try { CronToSchtasks.Convert(schedule); }
@@ -90,6 +95,14 @@ public static class CreateTaskTool
                 {
                     return JsonSerializer.Serialize(new { success = false, error = ex.Message }, JsonOptions);
                 }
+            }
+
+            DateTimeOffset? scheduleOnceValue = null;
+            if (schedule_once is not null)
+            {
+                if (!DateTimeOffset.TryParse(schedule_once, out var parsed))
+                    return JsonSerializer.Serialize(new { success = false, error = $"Invalid schedule_once datetime: '{schedule_once}'. Use ISO 8601 format." }, JsonOptions);
+                scheduleOnceValue = parsed;
             }
 
             // Check preset API key (warning only)
@@ -105,6 +118,7 @@ public static class CreateTaskTool
                 Description = description,
                 Prompt = prompt,
                 Schedule = schedule,
+                ScheduleOnce = scheduleOnceValue,
                 IsEnabled = true,
                 Guardrails = new TaskGuardrails
                 {
@@ -125,7 +139,7 @@ public static class CreateTaskTool
             // Register with schtasks
             bool scheduleRegistered = false;
             string? scheduleError = null;
-            if (schedule is not null)
+            if (schedule is not null || scheduleOnceValue.HasValue)
             {
                 var result = await scheduler.RegisterAsync(task);
                 scheduleRegistered = result.Success;
@@ -133,10 +147,11 @@ public static class CreateTaskTool
                     scheduleError = result.ErrorMessage;
             }
 
+            var scheduleDesc = schedule ?? scheduleOnceValue?.ToString("o");
             var summary = $"Task '{name}' created successfully.";
             if (scheduleRegistered)
-                summary += $" Scheduled: {schedule}";
-            else if (schedule is not null && !scheduleRegistered)
+                summary += $" Scheduled: {scheduleDesc}";
+            else if (scheduleDesc is not null && !scheduleRegistered)
                 summary += $" Schedule registration failed: {scheduleError}";
             if (presetWarning is not null)
                 summary += $" {presetWarning}";
@@ -145,7 +160,7 @@ public static class CreateTaskTool
             {
                 success = true,
                 task_id = task.Id,
-                schedule_registered = schedule is not null ? scheduleRegistered : (bool?)null,
+                schedule_registered = scheduleDesc is not null ? scheduleRegistered : (bool?)null,
                 summary,
             }, JsonOptions);
         }

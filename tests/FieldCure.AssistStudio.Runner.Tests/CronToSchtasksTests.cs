@@ -158,4 +158,15 @@ public class CronToSchtasksTests
         Assert.IsNotNull(trigger.Days);
         CollectionAssert.AreEqual(new[] { "SUN", "SAT" }, trigger.Days);
     }
+
+    [TestMethod]
+    public void OnceTrigger_ToSchtasksArgs()
+    {
+        var trigger = new SchtasksTrigger(ScheduleType.Once, 1, "15:21",
+            StartDate: "2026/04/07",
+            Description: "Once at 2026-04-07 15:21");
+
+        Assert.AreEqual(ScheduleType.Once, trigger.Type);
+        Assert.AreEqual("/SC ONCE /SD 2026/04/07 /ST 15:21", trigger.ToSchtasksArgs());
+    }
 }

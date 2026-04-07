@@ -34,8 +34,10 @@ public static class UpdateTaskTool
         string? prompt = null,
         [Description("New description")]
         string? description = null,
-        [Description("New cron schedule. Use '__remove__' to remove schedule.")]
+        [Description("New cron schedule. Use '__remove__' to remove schedule. Mutually exclusive with schedule_once.")]
         string? schedule = null,
+        [Description("ISO 8601 datetime for one-time execution. Use '__remove__' to clear. Mutually exclusive with schedule.")]
+        string? schedule_once = null,
         [Description("Enable or disable the task")]
         bool? is_enabled = null,
         [Description("New maximum rounds")]
@@ -60,10 +62,14 @@ public static class UpdateTaskTool
 
             var updatedFields = new List<string>();
             var oldSchedule = task.Schedule;
+            var oldScheduleOnce = task.ScheduleOnce;
 
             if (name is not null) { task.Name = name; updatedFields.Add("name"); }
             if (prompt is not null) { task.Prompt = prompt; updatedFields.Add("prompt"); }
             if (description is not null) { task.Description = description; updatedFields.Add("description"); }
+
+            if (schedule is not null && schedule_once is not null)
+                return JsonSerializer.Serialize(new { success = false, error = "Cannot specify both 'schedule' and 'schedule_once'." }, JsonOptions);
 
             if (schedule is not null)
             {
@@ -79,8 +85,25 @@ public static class UpdateTaskTool
                         return JsonSerializer.Serialize(new { success = false, error = ex.Message }, JsonOptions);
                     }
                     task.Schedule = schedule;
+                    task.ScheduleOnce = null; // clear mutually exclusive field
                 }
                 updatedFields.Add("schedule");
+            }
+
+            if (schedule_once is not null)
+            {
+                if (schedule_once == "__remove__")
+                {
+                    task.ScheduleOnce = null;
+                }
+                else
+                {
+                    if (!DateTimeOffset.TryParse(schedule_once, out var parsed))
+                        return JsonSerializer.Serialize(new { success = false, error = $"Invalid schedule_once datetime: '{schedule_once}'." }, JsonOptions);
+                    task.ScheduleOnce = parsed;
+                    task.Schedule = null; // clear mutually exclusive field
+                }
+                updatedFields.Add("schedule_once");
             }
 
             if (is_enabled.HasValue) { task.IsEnabled = is_enabled.Value; updatedFields.Add("is_enabled"); }
@@ -132,20 +155,20 @@ public static class UpdateTaskTool
 
             // Handle schtasks changes
             bool? scheduleRegistered = null;
-            if (updatedFields.Contains("schedule"))
+            if (updatedFields.Contains("schedule") || updatedFields.Contains("schedule_once"))
             {
                 // Remove old schedule
-                if (oldSchedule is not null)
+                if (oldSchedule is not null || oldScheduleOnce.HasValue)
                     await scheduler.UnregisterAsync(task_id);
 
                 // Register new schedule
-                if (task.Schedule is not null)
+                if (task.Schedule is not null || task.ScheduleOnce.HasValue)
                 {
                     var result = await scheduler.RegisterAsync(task);
                     scheduleRegistered = result.Success;
                 }
             }
-            else if (updatedFields.Contains("is_enabled") && task.Schedule is not null)
+            else if (updatedFields.Contains("is_enabled") && (task.Schedule is not null || task.ScheduleOnce.HasValue))
             {
                 var result = await scheduler.SetEnabledAsync(task_id, task.IsEnabled);
                 scheduleRegistered = result.Success;

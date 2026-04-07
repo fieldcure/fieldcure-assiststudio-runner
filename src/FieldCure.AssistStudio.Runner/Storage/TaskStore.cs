@@ -102,6 +102,15 @@ public sealed class TaskStore : IDisposable
             migCmd.ExecuteNonQuery();
         }
         catch (SqliteException) { /* column already exists */ }
+
+        // Migration: add ScheduleOnce column (v1.1.0)
+        try
+        {
+            using var migCmd = conn.CreateCommand();
+            migCmd.CommandText = "ALTER TABLE Tasks ADD COLUMN ScheduleOnce TEXT;";
+            migCmd.ExecuteNonQuery();
+        }
+        catch (SqliteException) { /* column already exists */ }
     }
 
     /// <summary>Opens a new SQLite connection with foreign keys enabled.</summary>
@@ -143,9 +152,9 @@ public sealed class TaskStore : IDisposable
             conditions.Add("IsEnabled = 0");
 
         if (hasSchedule == true)
-            conditions.Add("Schedule IS NOT NULL");
+            conditions.Add("(Schedule IS NOT NULL OR ScheduleOnce IS NOT NULL)");
         else if (hasSchedule == false)
-            conditions.Add("Schedule IS NULL");
+            conditions.Add("(Schedule IS NULL AND ScheduleOnce IS NULL)");
 
         var where = conditions.Count > 0 ? " WHERE " + string.Join(" AND ", conditions) : "";
         cmd.CommandText = $"SELECT * FROM Tasks{where} ORDER BY Name";
@@ -164,10 +173,10 @@ public sealed class TaskStore : IDisposable
         using var conn = Open();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            INSERT INTO Tasks (Id, Name, Description, Prompt, Schedule, IsEnabled,
+            INSERT INTO Tasks (Id, Name, Description, Prompt, Schedule, ScheduleOnce, IsEnabled,
                 MaxRounds, TimeoutSeconds, AllowedTools, PresetName, McpServers, OutputChannel,
                 ExcludeDefaultServers, CreatedAt, UpdatedAt)
-            VALUES (@id, @name, @desc, @prompt, @schedule, @enabled,
+            VALUES (@id, @name, @desc, @prompt, @schedule, @scheduleOnce, @enabled,
                 @maxRounds, @timeout, @allowedTools, @preset, @mcpServers, @outputChannel,
                 @excludeDefaults, @created, @updated)
             """;
@@ -177,6 +186,8 @@ public sealed class TaskStore : IDisposable
         cmd.Parameters.AddWithValue("@desc", (object?)task.Description ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@prompt", task.Prompt);
         cmd.Parameters.AddWithValue("@schedule", (object?)task.Schedule ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@scheduleOnce",
+            task.ScheduleOnce.HasValue ? task.ScheduleOnce.Value.ToString("o") : DBNull.Value);
         cmd.Parameters.AddWithValue("@enabled", task.IsEnabled ? 1 : 0);
         cmd.Parameters.AddWithValue("@maxRounds", task.Guardrails.MaxRounds);
         cmd.Parameters.AddWithValue("@timeout", task.Guardrails.TimeoutSeconds);
@@ -202,6 +213,7 @@ public sealed class TaskStore : IDisposable
         cmd.CommandText = """
             UPDATE Tasks SET
                 Name = @name, Description = @desc, Prompt = @prompt, Schedule = @schedule,
+                ScheduleOnce = @scheduleOnce,
                 IsEnabled = @enabled, MaxRounds = @maxRounds, TimeoutSeconds = @timeout,
                 AllowedTools = @allowedTools, PresetName = @preset, McpServers = @mcpServers,
                 OutputChannel = @outputChannel, ExcludeDefaultServers = @excludeDefaults,
@@ -214,6 +226,8 @@ public sealed class TaskStore : IDisposable
         cmd.Parameters.AddWithValue("@desc", (object?)task.Description ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@prompt", task.Prompt);
         cmd.Parameters.AddWithValue("@schedule", (object?)task.Schedule ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@scheduleOnce",
+            task.ScheduleOnce.HasValue ? task.ScheduleOnce.Value.ToString("o") : DBNull.Value);
         cmd.Parameters.AddWithValue("@enabled", task.IsEnabled ? 1 : 0);
         cmd.Parameters.AddWithValue("@maxRounds", task.Guardrails.MaxRounds);
         cmd.Parameters.AddWithValue("@timeout", task.Guardrails.TimeoutSeconds);
@@ -418,6 +432,9 @@ public sealed class TaskStore : IDisposable
             Prompt = reader.GetString(reader.GetOrdinal("Prompt")),
             Schedule = reader.IsDBNull(reader.GetOrdinal("Schedule"))
                 ? null : reader.GetString(reader.GetOrdinal("Schedule")),
+            ScheduleOnce = !reader.IsDBNull(reader.GetOrdinal("ScheduleOnce"))
+                ? DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("ScheduleOnce")))
+                : null,
             IsEnabled = reader.GetInt32(reader.GetOrdinal("IsEnabled")) != 0,
             Guardrails = new TaskGuardrails
             {

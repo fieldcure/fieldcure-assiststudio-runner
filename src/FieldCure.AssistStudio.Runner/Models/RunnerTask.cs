@@ -17,8 +17,11 @@ public sealed class RunnerTask
     /// <summary>Natural language prompt that defines the workflow.</summary>
     public required string Prompt { get; set; }
 
-    /// <summary>Cron expression for scheduled execution. Null means manual-only.</summary>
+    /// <summary>Cron expression for scheduled execution. Null means manual-only. Mutually exclusive with <see cref="ScheduleOnce"/>.</summary>
     public string? Schedule { get; set; }
+
+    /// <summary>One-time execution datetime (ISO 8601). Mutually exclusive with <see cref="Schedule"/>.</summary>
+    public DateTimeOffset? ScheduleOnce { get; set; }
 
     /// <summary>Whether this task is active for scheduled execution.</summary>
     public bool IsEnabled { get; set; } = true;

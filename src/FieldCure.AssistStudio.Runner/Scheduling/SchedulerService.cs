@@ -32,17 +32,28 @@ public sealed class SchedulerService
     /// </summary>
     public async Task<ScheduleResult> RegisterAsync(RunnerTask task)
     {
-        if (string.IsNullOrEmpty(task.Schedule))
+        if (string.IsNullOrEmpty(task.Schedule) && !task.ScheduleOnce.HasValue)
             return new ScheduleResult(false, "No schedule defined for this task.");
 
         SchtasksTrigger trigger;
-        try
+        if (task.ScheduleOnce.HasValue)
         {
-            trigger = CronToSchtasks.Convert(task.Schedule);
+            var local = task.ScheduleOnce.Value.ToLocalTime();
+            trigger = new SchtasksTrigger(ScheduleType.Once, 1,
+                local.ToString("HH:mm"),
+                StartDate: local.ToString("yyyy/MM/dd"),
+                Description: $"Once at {local:yyyy-MM-dd HH:mm}");
         }
-        catch (UnsupportedScheduleException ex)
+        else
         {
-            return new ScheduleResult(false, ex.Message);
+            try
+            {
+                trigger = CronToSchtasks.Convert(task.Schedule!);
+            }
+            catch (UnsupportedScheduleException ex)
+            {
+                return new ScheduleResult(false, ex.Message);
+            }
         }
 
         var toolPath = ResolveToolPath();
