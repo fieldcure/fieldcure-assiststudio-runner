@@ -231,7 +231,7 @@ While Runner can be used standalone with Claude Desktop or VS Code (via `serve` 
 
 ## See Also
 
-Part of the [AssistStudio ecosystem](https://github.com/fieldcure/fieldcure-assiststudio#ecosystem).
+Part of the [AssistStudio ecosystem](https://github.com/fieldcure/fieldcure-assiststudio#packages).
 
 ## License
 
