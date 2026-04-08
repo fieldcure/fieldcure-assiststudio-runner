@@ -178,16 +178,16 @@ internal sealed class McpServerPool : IAsyncDisposable
     };
 
     /// <summary>Extracts concatenated text content from an MCP tool call result.</summary>
-    static string ExtractTextResult(CallToolResult result)
+    static ToolExecutionResult ExtractTextResult(CallToolResult result)
     {
         if (result.Content is { Count: > 0 } content)
         {
             var texts = content
                 .Where(c => c is TextContentBlock)
                 .Select(c => ((TextContentBlock)c).Text);
-            return string.Join("\n", texts);
+            return new ToolExecutionResult(string.Join("\n", texts));
         }
-        return result.IsError == true ? """{"error": true}""" : "{}";
+        return new ToolExecutionResult(result.IsError == true ? """{"error": true}""" : "{}");
     }
 
     /// <summary>Disposes all MCP client connections and clears internal state.</summary>

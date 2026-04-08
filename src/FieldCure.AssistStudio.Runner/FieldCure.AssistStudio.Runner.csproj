@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v1.1.3: Guide LLM to omit command in mcp_servers — Runner resolves paths automatically.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.1.4: Fix build break — adapt to ToolExecutionResult record type change in Ai.Providers.</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>

@@ -1,5 +1,9 @@
 ﻿# Release Notes
 
+## v1.1.4
+
+- **Fix build break** — adapt `McpServerPool.ExtractTextResult` to return `ToolExecutionResult` record type (Ai.Providers API change)
+
 ## v1.1.3
 
 - **Fix: Guide LLM to omit command in mcp_servers** — tool descriptions now instruct LLM to provide only `id` and `name`, preventing hallucinated command paths at the source
