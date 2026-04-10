@@ -1,4 +1,4 @@
-﻿# AssistStudio Runner
+# AssistStudio Runner
 
 [![NuGet](https://img.shields.io/nuget/v/FieldCure.AssistStudio.Runner)](https://www.nuget.org/packages/FieldCure.AssistStudio.Runner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/fieldcure/fieldcure-assiststudio-runner/blob/main/LICENSE)
@@ -16,7 +16,7 @@ A headless LLM task automation engine that executes natural language tasks on sc
 - **Flexible tool control** — `AllowedTools` null = all tools permitted; explicit list for fine-grained control; empty list = safe tools only
 - **Secure credentials** — API keys in Windows Credential Manager (DPAPI), shared with AssistStudio
 - **Execution logging** — DB summary + detailed JSON logs with full conversation history
-- **One-time scheduling** — `schedule_once` with ISO 8601 datetime for single-execution tasks ("5분 후에", "내일 9시에")
+- **One-time scheduling** — `schedule_once` with ISO 8601 datetime for single-execution tasks (“in 5 minutes”, “tomorrow at 9am”)
 - **Result delivery** — send results via Outbox channels (Slack, Telegram, Email, KakaoTalk, Discord)
 
 ## Installation
