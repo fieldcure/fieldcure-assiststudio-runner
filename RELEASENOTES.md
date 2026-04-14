@@ -1,5 +1,14 @@
 ﻿# Release Notes
 
+## v1.2.0
+
+### Changed
+
+- **Ai.Providers 0.4.0** — update dependency to pick up export, token compression, and attachment deduplication
+- **English-only schedule_once examples** — replace Korean examples with English in tool descriptions for broader compatibility
+
+---
+
 ## v1.1.4
 
 - **Fix build break** — adapt `McpServerPool.ExtractTextResult` to return `ToolExecutionResult` record type (Ai.Providers API change)
