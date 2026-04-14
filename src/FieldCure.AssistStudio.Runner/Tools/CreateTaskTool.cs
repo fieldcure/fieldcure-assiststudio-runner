@@ -39,7 +39,7 @@ public static class CreateTaskTool
         string? description = null,
         [Description("Cron expression for recurring execution (e.g. '0 9 * * 1-5' for weekdays at 9am). Mutually exclusive with schedule_once. Null = manual only.")]
         string? schedule = null,
-        [Description("ISO 8601 datetime for one-time execution (e.g. '2026-04-07T15:30:00+09:00'). Use for '~후에', '오늘', '내일' requests. Mutually exclusive with schedule.")]
+        [Description("ISO 8601 datetime for one-time execution (e.g. '2026-04-07T15:30:00+09:00'). Use for relative time requests like 'in N minutes/hours', 'today', 'tomorrow'. Mutually exclusive with schedule.")]
         string? schedule_once = null,
         [Description("Maximum LLM interaction rounds (default: 10)")]
         int? max_rounds = null,
