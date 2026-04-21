@@ -41,7 +41,7 @@ public class McpIntegrationTests
         // Find the built exe — adjust if running from different directory
         var solutionDir = FindSolutionDir();
         var exe = Path.Combine(solutionDir, "src", "FieldCure.AssistStudio.Runner",
-            "bin", "Release", "net8.0", "assiststudio-runner.exe");
+            "bin", "Release", "net8.0-windows", "assiststudio-runner.exe");
 
         // Fallback: use dotnet run
         string command;
