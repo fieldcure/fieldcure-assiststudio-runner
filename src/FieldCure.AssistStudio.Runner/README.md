@@ -1,12 +1,16 @@
 ﻿# FieldCure.AssistStudio.Runner
 
-**Headless LLM task automation engine** — define natural language tasks, schedule them via Windows Task Scheduler (recurring or one-time), and get results delivered through Slack, Telegram, Email, KakaoTalk, or Discord. Runs as an MCP server for task management or standalone for headless execution.
+<!-- mcp-name: io.github.fieldcure/assiststudio-runner -->
+
+**Windows-only headless LLM task automation engine** — define natural language tasks, schedule them via Windows Task Scheduler (recurring or one-time), and get results delivered through Slack, Telegram, Email, KakaoTalk, or Discord. Runs as an MCP server for task management or standalone for headless execution.
 
 ## Install
 
 ```bash
 dotnet tool install -g FieldCure.AssistStudio.Runner
 ```
+
+The published package is Windows-only because scheduling is implemented via Windows Task Scheduler and credentials are stored in Windows Credential Manager.
 
 ## Quick Start
 
@@ -62,6 +66,9 @@ Add to `claude_desktop_config.json`:
 - Windows (required for Task Scheduler and Credential Manager)
 - [FieldCure.Ai.Providers](https://www.nuget.org/packages/FieldCure.Ai.Providers) (bundled)
 - [FieldCure.Ai.Execution](https://www.nuget.org/packages/FieldCure.Ai.Execution) (bundled)
+
+Scheduled tasks are registered with Windows Task Scheduler in interactive mode,
+so the user must be logged in when the trigger fires.
 
 ## Designed for AssistStudio
 
