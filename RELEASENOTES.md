@@ -1,4 +1,15 @@
-﻿# Release Notes
+# Release Notes
+
+## v1.3.0
+
+### Changed
+
+- **Windows-only packaging** — main package and tests now target `net8.0-windows`, and package metadata explicitly calls out the Windows-only requirement for Task Scheduler and Credential Manager integration
+- **Modern MCP package metadata** — `.mcp/server.json` now uses the latest identifier-based NuGet schema with `runtimeHint: "dnx"` for current MCP client and VS Code integration
+- **Scheduler abstraction** — add `IJobScheduler` with a Windows Task Scheduler implementation to isolate platform scheduling behavior and prepare for future non-Windows backends
+- **Interactive scheduler behavior documented** — scheduled runs continue to use Windows Task Scheduler interactive mode, so users must be logged in when triggers fire
+
+---
 
 ## v1.2.0
 
