@@ -1,5 +1,17 @@
 ﻿# Release Notes
 
+## v1.3.0
+
+### Changed
+
+- **Windows-only declaration** — assembly-level `[SupportedOSPlatform("windows")]` plus "Windows-only" wording in the package description and READMEs signal the platform requirement (Task Scheduler + Credential Manager). TargetFramework stays `net8.0` because `PackAsTool` does not support Windows-specific TFMs — the attribute triggers CA1416 analyzer warnings for non-Windows consumers instead.
+- **Modern MCP package metadata** — `.mcp/server.json` now uses the latest identifier-based NuGet schema with `runtimeHint: "dnx"` for current MCP client and VS Code integration.
+- **Scheduler abstraction** — add `IJobScheduler` with a Windows Task Scheduler implementation to isolate platform scheduling behavior and prepare for future non-Windows backends.
+- **dnx fallback for scheduled runs** — when no runner executable is on disk, schtasks entries fall back to `dnx FieldCure.AssistStudio.Runner@<Major>.* --yes exec <task-id>`, letting AssistStudio 0.17+ hosts schedule tasks without installing the Runner global tool first.
+- **Interactive scheduler behavior documented** — scheduled runs continue to use Windows Task Scheduler interactive mode, so users must be logged in when triggers fire.
+
+---
+
 ## v1.2.0
 
 ### Changed
