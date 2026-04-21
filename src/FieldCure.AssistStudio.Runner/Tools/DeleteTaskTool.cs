@@ -25,7 +25,7 @@ public static class DeleteTaskTool
         "Cannot delete a task that is currently running.")]
     public static async Task<string> DeleteTask(
         TaskStore store,
-        SchedulerService scheduler,
+        IJobScheduler scheduler,
         RunnerConfig config,
         [Description("Task ID to delete")]
         string task_id,
@@ -42,7 +42,7 @@ public static class DeleteTaskTool
                 return JsonSerializer.Serialize(new { success = false, error = "Cannot delete a task that is currently running." }, JsonOptions);
 
             // Unregister from schtasks
-            if (task.Schedule is not null)
+            if (task.Schedule is not null || task.ScheduleOnce.HasValue)
                 await scheduler.UnregisterAsync(task_id);
 
             // Delete from store (cascades executions)

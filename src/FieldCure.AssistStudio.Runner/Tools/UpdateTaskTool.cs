@@ -22,10 +22,10 @@ public static class UpdateTaskTool
     [Description(
         "Updates an existing Runner task. Only provided fields are changed (partial update). " +
         "Use schedule='__remove__' to remove a schedule. " +
-        "Schedule changes automatically update Windows Task Scheduler.")]
+        "Schedule changes automatically update the Runner scheduler.")]
     public static async Task<string> UpdateTask(
         TaskStore store,
-        SchedulerService scheduler,
+        IJobScheduler scheduler,
         [Description("Task ID to update")]
         string task_id,
         [Description("New task name")]

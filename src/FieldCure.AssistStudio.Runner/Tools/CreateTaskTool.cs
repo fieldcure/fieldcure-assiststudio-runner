@@ -22,12 +22,12 @@ public static class CreateTaskTool
     [McpServerTool(Name = "create_task", Destructive = true)]
     [Description(
         "Creates a new Runner task with the given prompt, schedule, and configuration. " +
-        "If a cron schedule is provided, automatically registers with Windows Task Scheduler. " +
+        "If a cron schedule is provided, automatically registers with the Runner scheduler (Windows Task Scheduler on Windows). " +
         "Supported cron patterns: */N * * * * (every N min), 0 */N * * * (every N hours), " +
         "M H * * * (daily), M H * * 1-5 (weekdays), M H D * * (monthly).")]
     public static async Task<string> CreateTask(
         TaskStore store,
-        SchedulerService scheduler,
+        IJobScheduler scheduler,
         ICredentialService credentials,
         [Description("Human-readable name for the task")]
         string name,

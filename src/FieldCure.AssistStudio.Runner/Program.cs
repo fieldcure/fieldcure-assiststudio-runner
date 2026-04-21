@@ -55,7 +55,7 @@ async Task<int> RunServeAsync()
         .AddSingleton(config)
         .AddSingleton(new TaskStore(dataDir))
         .AddSingleton<ICredentialService, CredentialService>()
-        .AddSingleton<SchedulerService>()
+        .AddSingleton<IJobScheduler, WindowsTaskScheduler>()
         .AddSingleton<TaskExecutor>()
         .AddMcpServer(options =>
         {
@@ -63,7 +63,7 @@ async Task<int> RunServeAsync()
             {
                 Name = "assiststudio-runner",
                 Title = "AssistStudio Runner",
-                Description = "Headless LLM task runner with scheduling via Windows Task Scheduler",
+                Description = "Headless LLM task runner with scheduling via Windows Task Scheduler (Windows-only)",
                 Version = GetPublicVersion(),
             };
         })
@@ -146,13 +146,11 @@ static int PrintUsage()
     return 1;
 }
 
-/// <summary>
-/// Returns the user-facing server version. Strips the SemVer 2.0 build-metadata
-/// suffix (<c>+&lt;commit-sha&gt;</c>) that the .NET SDK auto-appends to
-/// <see cref="AssemblyInformationalVersionAttribute"/>; that hash is only useful
-/// to developers and just adds noise in client UIs. The assembly attribute
-/// itself still carries the full string for diagnostic logs and debuggers.
-/// </summary>
+// Returns the user-facing server version. Strips the SemVer 2.0 build-metadata
+// suffix (+<commit-sha>) that the .NET SDK auto-appends to
+// AssemblyInformationalVersionAttribute; that hash is only useful to developers
+// and just adds noise in client UIs. The assembly attribute itself still carries
+// the full string for diagnostic logs and debuggers.
 static string GetPublicVersion()
 {
     var info = typeof(Program).Assembly
