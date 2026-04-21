@@ -16,7 +16,7 @@
     <Authors>Jong Hyun Kim</Authors>
     <Company>Fieldcure Co., Ltd.</Company>
     <Copyright>Copyright (c) 2026 Fieldcure Co., Ltd.</Copyright>
-    <Description>Headless LLM task automation engine with scheduling. Executes natural language tasks on schedule via Windows Task Scheduler and sends results through configured channels.</Description>
+    <Description>Windows-only headless LLM task automation engine with scheduling. Executes natural language tasks on schedule via Windows Task Scheduler and sends results through configured channels.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/fieldcure/fieldcure-assiststudio-runner</PackageProjectUrl>
     <RepositoryUrl>https://github.com/fieldcure/fieldcure-assiststudio-runner</RepositoryUrl>

@@ -1,6 +1,7 @@
-﻿using FieldCure.AssistStudio.Runner.Models;
+using FieldCure.AssistStudio.Runner.Models;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.Versioning;
 
 namespace FieldCure.AssistStudio.Runner.Scheduling;
@@ -56,12 +57,12 @@ public sealed class WindowsTaskScheduler : IJobScheduler
             }
         }
 
-        var toolPath = ResolveToolPath();
         var taskName = $"{TaskNamePrefix}{task.Id}";
         var triggerArgs = trigger.ToSchtasksArgs();
+        var runCommand = BuildRunnerCommandLine(task.Id);
 
         var args = $"/CREATE /TN \"{taskName}\" " +
-                   $"/TR \"\\\"{toolPath}\\\" exec {task.Id}\" " +
+                   $"/TR \"{EscapeForTaskScheduler(runCommand)}\" " +
                    $"{triggerArgs} /F /RL LIMITED /IT";
 
         return await RunSchtasksAsync(args);
@@ -117,8 +118,30 @@ public sealed class WindowsTaskScheduler : IJobScheduler
         return ids;
     }
 
-    /// <summary>Resolves the absolute path to the assiststudio-runner executable.</summary>
-    string ResolveToolPath()
+    /// <summary>
+    /// Builds the command line Task Scheduler should invoke for a scheduled run.
+    /// Prefers a concrete runner executable when present, otherwise falls back to
+    /// <c>dnx FieldCure.AssistStudio.Runner@&lt;major&gt;.* --yes exec &lt;task-id&gt;</c>.
+    /// </summary>
+    string BuildRunnerCommandLine(string taskId)
+    {
+        var toolPath = ResolveRunnerExecutablePath();
+        if (!string.IsNullOrEmpty(toolPath))
+            return $"\"{toolPath}\" exec {taskId}";
+
+        var dnxPath = ResolveDnxPath();
+        if (!string.IsNullOrEmpty(dnxPath))
+            return $"\"{dnxPath}\" FieldCure.AssistStudio.Runner@{GetCurrentMajorVersionRange()} --yes exec {taskId}";
+
+        _logger.LogWarning(
+            "No runner executable or dnx found — schtasks entry will fail at trigger time. " +
+            "Install the .NET 10 SDK or run `dotnet tool install -g FieldCure.AssistStudio.Runner`.");
+
+        return $"assiststudio-runner exec {taskId}";
+    }
+
+    /// <summary>Resolves the absolute path to the assiststudio-runner executable, if present.</summary>
+    string? ResolveRunnerExecutablePath()
     {
         if (!string.IsNullOrEmpty(_config.ToolPath))
             return _config.ToolPath;
@@ -136,8 +159,7 @@ public sealed class WindowsTaskScheduler : IJobScheduler
         if (File.Exists(globalToolPath))
             return globalToolPath;
 
-        // Last resort: assume on PATH
-        return "assiststudio-runner";
+        return null;
     }
 
     /// <summary>Runs schtasks.exe with the given arguments and returns the result.</summary>
@@ -200,8 +222,51 @@ public sealed class WindowsTaskScheduler : IJobScheduler
         return errorMessage.Contains("cannot find the file specified", StringComparison.OrdinalIgnoreCase) ||
                errorMessage.Contains("cannot find the task", StringComparison.OrdinalIgnoreCase) ||
                errorMessage.Contains("the system cannot find the file specified", StringComparison.OrdinalIgnoreCase) ||
-               errorMessage.Contains("no scheduled task", StringComparison.OrdinalIgnoreCase);
+               errorMessage.Contains("no scheduled task", StringComparison.OrdinalIgnoreCase) ||
+               errorMessage.Contains("지정된", StringComparison.Ordinal) ||
+               errorMessage.Contains("찾을 수 없습니다", StringComparison.Ordinal);
     }
+
+    /// <summary>Resolves an absolute path to dnx for Process and Task Scheduler launches.</summary>
+    static string? ResolveDnxPath()
+    {
+        var pathVar = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrEmpty(pathVar))
+            return null;
+
+        string[] extensions = OperatingSystem.IsWindows()
+            ? [".cmd", ".exe", ".bat", ".ps1"]
+            : [""];
+
+        foreach (var dir in pathVar.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            foreach (var ext in extensions)
+            {
+                var candidate = Path.Combine(dir, $"dnx{ext}");
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Returns the in-range major version string for dnx package execution (for example, <c>1.*</c>).</summary>
+    static string GetCurrentMajorVersionRange()
+    {
+        var version = typeof(WindowsTaskScheduler).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion
+            ?.Split('+', 2)[0];
+
+        if (Version.TryParse(version, out var parsed))
+            return $"{parsed.Major}.*";
+
+        return "1.*";
+    }
+
+    /// <summary>Escapes a command line for embedding inside schtasks /TR quotes.</summary>
+    static string EscapeForTaskScheduler(string commandLine) => commandLine.Replace("\"", "\\\"");
 
     /// <summary>Parses the first field from a CSV row emitted by schtasks /FO CSV.</summary>
     static string ParseFirstCsvField(string line)

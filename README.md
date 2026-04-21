@@ -3,7 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/FieldCure.AssistStudio.Runner)](https://www.nuget.org/packages/FieldCure.AssistStudio.Runner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/fieldcure/fieldcure-assiststudio-runner/blob/main/LICENSE)
 
-A headless LLM task automation engine that executes natural language tasks on schedule and delivers results through configured channels. Built as a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server with the official [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk).
+A Windows-only headless LLM task automation engine that executes natural language tasks on schedule and delivers results through configured channels. Built as a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server with the official [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk).
 
 ## Features
 
@@ -28,6 +28,7 @@ dotnet tool install -g FieldCure.AssistStudio.Runner
 ```
 
 After installation, the `assiststudio-runner` command is available globally.
+The published package is Windows-only because scheduling is implemented via Windows Task Scheduler and credentials are stored in Windows Credential Manager.
 
 ### From source
 
@@ -186,6 +187,9 @@ Cron expressions are automatically mapped to Windows Task Scheduler entries:
 | Daily at 9:00 AM | `schedule: "0 9 * * *"` | `/SC DAILY /ST 09:00` |
 | Weekdays at 9:00 AM | `schedule: "0 9 * * 1-5"` | `/SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 09:00` |
 | Monthly on the 1st | `schedule: "0 9 1 * *"` | `/SC MONTHLY /D 1 /ST 09:00` |
+
+Scheduled tasks are created with `schtasks /IT`, so they run in the interactive
+user context and require the user to be logged in at trigger time.
 
 ## Data Storage
 
