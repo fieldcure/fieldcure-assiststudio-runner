@@ -1,6 +1,20 @@
 ﻿# Release Notes
 
-## v1.3.0
+## v1.4.0 (2026-04-22)
+
+### Changed
+
+- **Auto-detected built-in server ids use `builtin_` prefix** — `DetectInstalledServers` now emits entries whose `McpServerConfig.Id` is `builtin_{Name}` instead of `default_{Name}`, matching the prefix the AssistStudio host uses for the same servers. Both sides share the `McpEnv_{serverId}_{key}` credential slot, so keys entered in the host are available to Runner-spawned servers without any additional mirror step.
+- **`McpServerEntry` carries environment variable keys** — a new `EnvironmentVariableKeys` list on `McpServerEntry` is forwarded through `ToMcpServerConfig`, so `McpServerPool` resolves each key through `CredentialService.GetMcpEnvVar(serverId, key)` at bootstrap. The auto-detected Essentials entry declares `SERPER_API_KEY`, `TAVILY_API_KEY`, `SERPAPI_API_KEY`, and `WOLFRAM_APPID`.
+- **`McpServerEntry.IsBuiltIn`** — a `[JsonIgnore]` flag set by `DetectInstalledServers` to distinguish auto-detected entries from user-configured ones. User entries keep the bare `Name` as their id.
+
+### Breaking
+
+- The id for auto-detected Essentials and Outbox changed from `default_essentials` / `default_outbox` to `builtin_essentials` / `builtin_outbox`. Any persisted `runner.json` or saved task row that references the old ids will no longer match the auto-detected entry. No external consumers are expected to be affected at this release stage.
+
+---
+
+## v1.3.0 (2026-04-21)
 
 ### Changed
 
@@ -12,7 +26,7 @@
 
 ---
 
-## v1.2.0
+## v1.2.0 (2026-04-14)
 
 ### Changed
 
@@ -21,28 +35,28 @@
 
 ---
 
-## v1.1.4
+## v1.1.4 (2026-04-08)
 
 - **Fix build break** — adapt `McpServerPool.ExtractTextResult` to return `ToolExecutionResult` record type (Ai.Providers API change)
 
-## v1.1.3
+## v1.1.3 (2026-04-07)
 
 - **Fix: Guide LLM to omit command in mcp_servers** — tool descriptions now instruct LLM to provide only `id` and `name`, preventing hallucinated command paths at the source
 
-## v1.1.2
+## v1.1.2 (2026-04-07)
 
 - **Fix: Always override known server commands with auto-detected paths** — known servers (essentials, outbox) always get the system-resolved path regardless of what the LLM provided. Replaces file-existence validation which could not keep up with varied hallucinated paths
 
-## v1.1.1
+## v1.1.1 (2026-04-07)
 
 - **Fix: Validate command path before skipping auto-resolve** — `ResolveCommands` now checks that absolute command paths exist on disk. LLM-hallucinated paths are replaced with auto-detected installed tool paths instead of failing at exec time
 
-## v1.1.0
+## v1.1.0 (2026-04-07)
 
 - **New: One-time schedule (`schedule_once`)** — `create_task` and `update_task` accept ISO 8601 datetime for one-time execution via schtasks `/SC ONCE`. Use for relative-time requests like "in 5 minutes", "today at 6pm", "tomorrow at 9am". Mutually exclusive with cron `schedule`
 - **Fix: Auto-resolve missing MCP server commands** — `McpServerConfig.ResolveCommands()` fills in missing command paths from auto-detected installed dotnet tools. Applied in CreateTaskTool, UpdateTaskTool (data quality), and TaskExecutor (defensive fallback). Fixes "MCP server is stdio but has no command" when LLM creates tasks with server name only
 
-## v1.0.0
+## v1.0.0 (2026-04-07)
 
 - **Auto-bootstrap stateless MCP servers** — exec mode auto-detects installed servers (Essentials, Outbox) when no MCP servers are configured, resolving to full paths for PATH-independent execution
 - **AllowedTools null = all tools** — null means all discovered tools are permitted; explicit empty list means no tools (safe tools only). Breaking change from v0.x where null meant no tools
@@ -51,19 +65,19 @@
 - **Full XML documentation** — `GenerateDocumentationFile` enabled, all public and private members documented
 - **Requires FieldCure.Ai.Execution 0.2.0+** for `AgentLoopResult.Messages` support
 
-## v0.5.0
+## v0.5.0 (2026-04-03)
 
 - **AgentLoop extraction** — LLM execution loop replaced with shared `FieldCure.Ai.Execution.AgentLoop`, eliminating ~120 lines of inline loop code from TaskExecutor
 - **MCP SDK 1.2.0** — upgraded ModelContextProtocol from 1.1.0 to 1.2.0
 - **Removed retry logic** — `CompleteWithRetryAsync` removed; retry is now the caller's responsibility (task-level re-execution via schtasks serves as retry)
 - **SafeTools moved** — safe tool allowlist (`get_environment`, `run_javascript`) moved from TaskExecutor to McpServerPool where filtering actually occurs
 
-## v0.4.0
+## v0.4.0 (2026-04-02)
 
 - **Fix: schtasks tool path resolution** — `ResolveToolPath()` now checks `%LOCALAPPDATA%\FieldCure\AssistStudio\tools\` first, fixing FILE_NOT_FOUND errors when schtasks triggers the runner executable
 - **Fix: cron `*` normalization** — bare `*` is now normalized to `*/1` before schtasks mapping, so `0 * * * *` and `0 */1 * * *` are handled identically
 
-## v0.3.0
+## v0.3.0 (2026-03-31)
 
 - **Default MCP servers** — `defaultMcpServers` in runner.json, auto-bootstrapped for every task execution
 - **Essentials auto-detection** — `BuildFromVault` includes FieldCure.Mcp.Essentials if installed
