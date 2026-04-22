@@ -168,10 +168,22 @@ public sealed class RunnerConfig
     /// Stateless MCP servers that can be auto-detected and bootstrapped
     /// without per-session context (folders, indexes, etc.).
     /// </summary>
-    static readonly (string Name, string Command, string[] Args)[] StatelessServers =
+    /// <summary>
+    /// Environment variable keys that each stateless server consumes (ADR-001).
+    /// Resolved at bootstrap time by <see cref="Credentials.ICredentialService.GetMcpEnvVar"/>
+    /// using the shared <c>McpEnv_{serverId}_{key}</c> slot — the same slot the host
+    /// (AssistStudio) writes to, so keys set in the host are picked up automatically.
+    /// </summary>
+    static readonly (string Name, string Command, string[] Args, string[] EnvKeys)[] StatelessServers =
     [
-        ("essentials", "fieldcure-mcp-essentials", []),
-        ("outbox", "fieldcure-mcp-outbox", []),
+        ("essentials", "fieldcure-mcp-essentials", [], new[]
+        {
+            "SERPER_API_KEY",
+            "TAVILY_API_KEY",
+            "SERPAPI_API_KEY",
+            "WOLFRAM_APPID",
+        }),
+        ("outbox", "fieldcure-mcp-outbox", [], Array.Empty<string>()),
     ];
 
     /// <summary>
@@ -192,7 +204,7 @@ public sealed class RunnerConfig
 
         var entries = new List<McpServerEntry>();
 
-        foreach (var (name, command, args) in StatelessServers)
+        foreach (var (name, command, args, envKeys) in StatelessServers)
         {
             var exeName = command + ext;
             var localPath = Path.Combine(localToolDir, exeName);
@@ -210,6 +222,8 @@ public sealed class RunnerConfig
                     Name = name,
                     Command = resolvedCommand,
                     Args = [.. args],
+                    IsBuiltIn = true,
+                    EnvironmentVariableKeys = envKeys.Length > 0 ? [.. envKeys] : null,
                 });
             }
         }
@@ -284,15 +298,31 @@ public sealed class McpServerEntry
     public Dictionary<string, string>? Env { get; set; }
 
     /// <summary>
+    /// Environment variable key names the server consumes. Values are resolved from
+    /// the shared <c>McpEnv_{serverId}_{key}</c> credential slot at bootstrap (ADR-001).
+    /// </summary>
+    public List<string>? EnvironmentVariableKeys { get; set; }
+
+    /// <summary>
+    /// Whether this entry was auto-detected as a built-in stateless server (Essentials, Outbox).
+    /// Not serialized — set by <see cref="RunnerConfig.DetectInstalledServers"/>.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsBuiltIn { get; set; }
+
+    /// <summary>
     /// Converts to a <see cref="McpServerConfig"/> for MCP client bootstrapping.
+    /// Built-in servers use the <c>builtin_{Name}</c> id so the credential slot
+    /// (<c>McpEnv_builtin_{Name}_{key}</c>) is shared with the AssistStudio host.
     /// </summary>
     public McpServerConfig ToMcpServerConfig() => new()
     {
-        Id = $"default_{Name}",
+        Id = IsBuiltIn ? $"builtin_{Name}" : Name,
         Name = Name,
         TransportType = McpTransportType.Stdio,
         Command = Command,
         Arguments = Args,
         IsEnabled = true,
+        EnvironmentVariableKeys = EnvironmentVariableKeys is { Count: > 0 } ? [.. EnvironmentVariableKeys] : null,
     };
 }
