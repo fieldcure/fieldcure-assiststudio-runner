@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v2.0.0: Breaking — Preset → Model rename across the public surface, aligning Runner with the upstream rename in Ai.Providers 0.7.0 (ProviderPreset → ProviderModel) and AssistStudio.Core 0.19.0 (Profile.PreferredModelName). runner.json defaultPresetName/presets/PresetConfig → defaultModelName/models/ModelConfig; runner.db Tasks.PresetName → Tasks.ModelName (auto-migrated via ALTER TABLE RENAME COLUMN on first start, requires SQLite 3.25+); MCP create_task/update_task preset_name argument → model_name; CLI config init --preset → --model-name. Pre-2.0 runner.json files are silently regenerated from PasswordVault on first start (custom edits lost). Rebuilt against Ai.Providers 0.7.1 and Ai.Execution 0.4.1 (SubAgentRequest.ModelName / SubAgentResult.UsedModel).</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.1: Completes the dnx migration on the Runner side. Drops the preference for tool-path-installed binaries under the retired %LOCALAPPDATA%\FieldCure\AssistStudio\tools\ folder (which AssistStudio stopped populating in mid-April), eliminating silent version-skew failures when stale binaries shadowed the dnx-cached current versions. WindowsTaskScheduler now spawns dnx directly for schtasks-fired exec workers. RunnerConfig.DetectInstalledServers uses dnx-based discovery; each stateless server (essentials, outbox) is pinned at its current major range so breaking changes never sneak in mid-cycle. RunnerConfig.Load auto-migrates pre-2.0.1 runner.json — any defaultMcpServers[].command pointing into the legacy tools/ folder is rewritten to the equivalent dnx command and saved back.</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>

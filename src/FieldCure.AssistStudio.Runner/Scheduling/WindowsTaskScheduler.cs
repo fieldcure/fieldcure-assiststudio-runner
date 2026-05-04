@@ -1,3 +1,4 @@
+using FieldCure.AssistStudio.Runner.Execution;
 using FieldCure.AssistStudio.Runner.Models;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -120,46 +121,33 @@ public sealed class WindowsTaskScheduler : IJobScheduler
 
     /// <summary>
     /// Builds the command line Task Scheduler should invoke for a scheduled run.
-    /// Prefers a concrete runner executable when present, otherwise falls back to
-    /// <c>dnx FieldCure.AssistStudio.Runner@&lt;major&gt;.* --yes exec &lt;task-id&gt;</c>.
+    /// Prefers <c>dnx</c> with the current major version range pinned, falling
+    /// back only to an explicit <see cref="RunnerConfig.ToolPath"/> override.
     /// </summary>
+    /// <remarks>
+    /// dnx caches the package after first fetch, so subsequent triggers are
+    /// effectively offline. The earlier preference for a tool-path-installed
+    /// binary at <c>%LOCALAPPDATA%\FieldCure\AssistStudio\tools\</c> is gone:
+    /// nothing populates that folder anymore, and a stale binary there would
+    /// silently shadow the dnx-cached current version (causing version-skew
+    /// failures at trigger time).
+    /// </remarks>
     string BuildRunnerCommandLine(string taskId)
     {
-        var toolPath = ResolveRunnerExecutablePath();
-        if (!string.IsNullOrEmpty(toolPath))
-            return $"\"{toolPath}\" exec {taskId}";
+        // Explicit override wins so power users can pin a specific build.
+        if (!string.IsNullOrEmpty(_config.ToolPath) && File.Exists(_config.ToolPath))
+            return $"\"{_config.ToolPath}\" exec {taskId}";
 
-        var dnxPath = ResolveDnxPath();
+        var dnxPath = DnxResolver.Path;
         if (!string.IsNullOrEmpty(dnxPath))
             return $"\"{dnxPath}\" FieldCure.AssistStudio.Runner@{GetCurrentMajorVersionRange()} --yes exec {taskId}";
 
         _logger.LogWarning(
-            "No runner executable or dnx found — schtasks entry will fail at trigger time. " +
-            "Install the .NET 10 SDK or run `dotnet tool install -g FieldCure.AssistStudio.Runner`.");
+            "dnx not found on PATH — schtasks entry will fail at trigger time. " +
+            "Install the .NET 10 SDK so dnx is available, or set RunnerConfig.ToolPath " +
+            "to a concrete assiststudio-runner executable.");
 
         return $"assiststudio-runner exec {taskId}";
-    }
-
-    /// <summary>Resolves the absolute path to the assiststudio-runner executable, if present.</summary>
-    string? ResolveRunnerExecutablePath()
-    {
-        if (!string.IsNullOrEmpty(_config.ToolPath))
-            return _config.ToolPath;
-
-        // Primary: AssistStudio local tool install path
-        var localToolPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FieldCure", "AssistStudio", "tools", "assiststudio-runner.exe");
-        if (File.Exists(localToolPath))
-            return localToolPath;
-
-        // Fallback: global dotnet tool
-        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var globalToolPath = Path.Combine(userProfile, ".dotnet", "tools", "assiststudio-runner.exe");
-        if (File.Exists(globalToolPath))
-            return globalToolPath;
-
-        return null;
     }
 
     /// <summary>Runs schtasks.exe with the given arguments and returns the result.</summary>
@@ -225,30 +213,6 @@ public sealed class WindowsTaskScheduler : IJobScheduler
                errorMessage.Contains("no scheduled task", StringComparison.OrdinalIgnoreCase) ||
                errorMessage.Contains("지정된", StringComparison.Ordinal) ||
                errorMessage.Contains("찾을 수 없습니다", StringComparison.Ordinal);
-    }
-
-    /// <summary>Resolves an absolute path to dnx for Process and Task Scheduler launches.</summary>
-    static string? ResolveDnxPath()
-    {
-        var pathVar = Environment.GetEnvironmentVariable("PATH");
-        if (string.IsNullOrEmpty(pathVar))
-            return null;
-
-        string[] extensions = OperatingSystem.IsWindows()
-            ? [".cmd", ".exe", ".bat", ".ps1"]
-            : [""];
-
-        foreach (var dir in pathVar.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
-        {
-            foreach (var ext in extensions)
-            {
-                var candidate = Path.Combine(dir, $"dnx{ext}");
-                if (File.Exists(candidate))
-                    return candidate;
-            }
-        }
-
-        return null;
     }
 
     /// <summary>Returns the in-range major version string for dnx package execution (for example, <c>1.*</c>).</summary>

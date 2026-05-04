@@ -1,5 +1,41 @@
 ﻿# Release Notes
 
+## v2.0.1 (2026-05-04)
+
+### Fix — Retire the `%LOCALAPPDATA%\FieldCure\AssistStudio\tools\` install scheme
+
+Completes the dnx migration on the Runner side. AssistStudio's MCP
+runtime moved to `dnx` in mid-April; Runner kept preferring tool-path
+binaries under the legacy `tools/` folder, but nothing populated that
+folder anymore. Stale binaries left there shadowed the dnx-cached
+current versions and caused silent version-skew failures at trigger
+time (e.g. a v1.x worker hitting the v2.x DB schema — exit 1, the cmd
+window flashed and disappeared).
+
+- **`WindowsTaskScheduler.BuildRunnerCommandLine`** drops the tool-path
+  preference. Schtasks entries now spawn `dnx FieldCure.AssistStudio.Runner@<major>.* --yes exec <id>`
+  by default; an explicit `RunnerConfig.ToolPath` override still wins
+  when pinning a specific build is required.
+
+- **`RunnerConfig.DetectInstalledServers`** replaces the dual global /
+  local tool-path scan with dnx-based discovery. Each stateless server
+  (essentials, outbox) is emitted as a dnx command pinned at its current
+  major range (`@2.*`); bumping a major now requires an intentional
+  Runner release so breaking changes never sneak in mid-cycle.
+
+- **`RunnerConfig.Load`** auto-migrates pre-2.0.1 `runner.json` files —
+  any `defaultMcpServers[].command` pointing into the retired `tools/`
+  folder is rewritten to the equivalent dnx command and saved back
+  durably. Unknown entries are left untouched.
+
+- **New `DnxResolver` helper** centralizes PATH-based resolution of the
+  `dnx` shim (Windows `.cmd` / `.exe` / `.bat` / `.ps1`, plain `dnx` on
+  Linux). Used by both the schtasks command-line builder and stateless
+  MCP server discovery.
+
+`runner.json` migration is automatic on first start; no user action
+required.
+
 ## v2.0.0 (2026-05-04)
 
 ### Breaking — Preset → Model rename across the public surface
