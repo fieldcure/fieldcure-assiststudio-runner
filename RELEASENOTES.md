@@ -1,5 +1,53 @@
 ﻿# Release Notes
 
+## v2.0.1 (2026-05-04)
+
+### Fix — Retire the `%LOCALAPPDATA%\FieldCure\AssistStudio\tools\` install scheme
+
+AssistStudio's MCP runtime moved to `dnx` in mid-April but Runner kept
+preferring tool-path-installed binaries under the legacy `tools/` folder.
+With nothing populating that folder anymore, stale binaries shadowed the
+dnx-cached current versions and caused silent version-skew failures at
+trigger time (e.g. a v1.x worker hitting the v2.x DB schema, exit code 1
+with no log entry — the cmd window flashed and disappeared).
+
+This release completes the dnx migration on the Runner side:
+
+- **`WindowsTaskScheduler.BuildRunnerCommandLine`** — drops the tool-path
+  preference. Schtasks entries now spawn `dnx FieldCure.AssistStudio.Runner@<major>.* --yes exec <id>`
+  by default; an explicit `RunnerConfig.ToolPath` override still wins for
+  power users pinning a specific build.
+
+- **`RunnerConfig.DetectInstalledServers`** — replaces the dual
+  global/local tool-path scan with a single dnx-based discovery. Each
+  stateless server (essentials, outbox) is emitted as a dnx command pinned
+  at its current major range (`FieldCure.Mcp.Essentials@2.*`,
+  `FieldCure.Mcp.Outbox@2.*`). Bumping the major now requires an
+  intentional Runner release — breaking changes never sneak in mid-cycle.
+
+- **`RunnerConfig.Load`** — auto-migrates pre-2.0.1 `runner.json` files.
+  Any `defaultMcpServers[].command` pointing at the retired `tools/` folder
+  is rewritten to the equivalent dnx command on first load and saved back
+  durably. Unknown entries are left untouched.
+
+- **New `DnxResolver` helper** — centralizes PATH-based resolution of the
+  `dnx` shim (Windows `.cmd` / `.exe` / `.bat` / `.ps1`, plain `dnx` on
+  Linux). Used by both the schtasks command-line builder and stateless
+  MCP server discovery.
+
+### Migration
+
+Existing `schtasks` entries registered under v2.0.0 still encode the old
+absolute path to `tools/assiststudio-runner.exe`. After upgrading they
+will fail at trigger time with "file not found"; **re-create the schedule
+via `update_task` (or delete + `create_task`)** and Runner v2.0.1 will
+register a clean dnx-based command line. A future AssistStudio release
+will offer a one-click "migrate stale schedules" action — tracked as a
+backlog item, not blocking on this fix.
+
+`runner.json` migration is automatic on first start; no user action
+required.
+
 ## v2.0.0 (2026-05-04)
 
 ### Breaking — Preset → Model rename across the public surface

@@ -1,5 +1,6 @@
 using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
+using FieldCure.AssistStudio.Runner.Execution;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -100,10 +101,19 @@ public sealed class RunnerConfig
     /// Returns default config if the file doesn't exist.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// 2.0 is a hard cutover from "preset" to "model" terminology — pre-2.0
     /// runner.json files (with <c>defaultPresetName</c> / <c>presets</c>) are
     /// not migrated. Delete the file before upgrading and let
     /// <see cref="BuildFromVault"/> regenerate it.
+    /// </para>
+    /// <para>
+    /// 2.0.1 retires the <c>%LOCALAPPDATA%\FieldCure\AssistStudio\tools\</c>
+    /// install scheme: any legacy absolute-path command in <c>defaultMcpServers</c>
+    /// pointing into that folder is rewritten on load to the equivalent <c>dnx</c>
+    /// command for known stateless servers, and the migrated config is saved
+    /// back so the file on disk reflects the new shape.
+    /// </para>
     /// </remarks>
     public static RunnerConfig Load(string? dataDirectory = null)
     {
@@ -114,7 +124,61 @@ public sealed class RunnerConfig
             return new RunnerConfig();
 
         var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<RunnerConfig>(json, JsonOptions) ?? new RunnerConfig();
+        var config = JsonSerializer.Deserialize<RunnerConfig>(json, JsonOptions) ?? new RunnerConfig();
+
+        if (MigrateLegacyToolPathCommands(config))
+        {
+            try
+            {
+                config.Save(dir);
+            }
+            catch (Exception)
+            {
+                // Migration is best-effort; in-memory config is already migrated
+                // and will work for this session even if the durable write fails.
+            }
+        }
+
+        return config;
+    }
+
+    /// <summary>
+    /// Rewrites entries in <see cref="DefaultMcpServers"/> whose <see cref="McpServerEntry.Command"/>
+    /// points at the retired <c>%LOCALAPPDATA%\FieldCure\AssistStudio\tools\</c>
+    /// folder so they spawn through <c>dnx</c> instead. Only known stateless
+    /// servers (essentials, outbox) are migrated — unknown entries are left
+    /// untouched. Returns <see langword="true"/> when any entry changed.
+    /// </summary>
+    static bool MigrateLegacyToolPathCommands(RunnerConfig config)
+    {
+        if (config.DefaultMcpServers.Count == 0)
+            return false;
+
+        var legacyToolDir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FieldCure", "AssistStudio", "tools") + Path.DirectorySeparatorChar;
+
+        var dnxEntries = DetectInstalledServers()
+            .ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+        if (dnxEntries.Count == 0)
+            return false;
+
+        var changed = false;
+        foreach (var entry in config.DefaultMcpServers)
+        {
+            if (string.IsNullOrEmpty(entry.Command))
+                continue;
+            if (!entry.Command.StartsWith(legacyToolDir, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (!dnxEntries.TryGetValue(entry.Name, out var dnxEntry))
+                continue;
+
+            entry.Command = dnxEntry.Command;
+            entry.Args = [.. dnxEntry.Args];
+            changed = true;
+        }
+
+        return changed;
     }
 
     /// <summary>
@@ -171,71 +235,85 @@ public sealed class RunnerConfig
     }
 
     /// <summary>
-    /// Stateless MCP servers that can be auto-detected and bootstrapped
-    /// without per-session context (folders, indexes, etc.).
+    /// Stateless MCP servers that Runner can bootstrap on demand without
+    /// per-session context (folders, indexes, etc.). Each entry pins a major
+    /// version range — bumping the major requires an intentional Runner
+    /// release so breaking changes never sneak in mid-cycle.
     /// </summary>
-    /// <summary>
-    /// Environment variable keys that each stateless server consumes (ADR-001).
-    /// Resolved at bootstrap time by <see cref="Credentials.ICredentialService.GetMcpEnvVar"/>
-    /// using the shared <c>McpEnv_{serverId}_{key}</c> slot — the same slot the host
-    /// (AssistStudio) writes to, so keys set in the host are picked up automatically.
-    /// </summary>
-    static readonly (string Name, string Command, string[] Args, string[] EnvKeys)[] StatelessServers =
+    /// <remarks>
+    /// <para>
+    /// <c>EnvKeys</c> are resolved at bootstrap by
+    /// <see cref="Credentials.ICredentialService.GetMcpEnvVar"/> from the shared
+    /// <c>McpEnv_{serverId}_{key}</c> slot — the same slot the host (AssistStudio)
+    /// writes to, so keys set in the host are picked up automatically.
+    /// </para>
+    /// <para>
+    /// Servers are spawned via <c>dnx</c> (NuGet's npx-equivalent), eliminating
+    /// the earlier <c>%LOCALAPPDATA%\FieldCure\AssistStudio\tools\</c> tool-path
+    /// install scheme. dnx caches packages under <c>%USERPROFILE%\.dnx\packages</c>
+    /// and resolves them lazily on first invocation.
+    /// </para>
+    /// </remarks>
+    static readonly StatelessServerEntry[] StatelessServers =
     [
-        ("essentials", "fieldcure-mcp-essentials", [], new[]
-        {
-            "SERPER_API_KEY",
-            "TAVILY_API_KEY",
-            "SERPAPI_API_KEY",
-            "WOLFRAM_APPID",
-        }),
-        ("outbox", "fieldcure-mcp-outbox", [], Array.Empty<string>()),
+        new("essentials", "FieldCure.Mcp.Essentials", "2.*",
+            ["SERPER_API_KEY", "TAVILY_API_KEY", "SERPAPI_API_KEY", "WOLFRAM_APPID"]),
+        new("outbox",     "FieldCure.Mcp.Outbox",     "2.*", []),
     ];
 
     /// <summary>
-    /// Detects installed stateless dotnet tool MCP servers and returns their entries.
-    /// Checks both global (<c>~/.dotnet/tools/</c>) and local
-    /// (<c>%LOCALAPPDATA%/FieldCure/AssistStudio/tools/</c>) install paths.
+    /// Returns dnx-based <see cref="McpServerEntry"/> definitions for every
+    /// stateless server in <see cref="StatelessServers"/>. Detection is purely
+    /// PATH-based now — if <c>dnx</c> is on PATH the entry is produced; otherwise
+    /// the list is empty (caller logs "no MCP servers configured" and proceeds).
     /// </summary>
     public static List<McpServerEntry> DetectInstalledServers()
     {
-        var ext = OperatingSystem.IsWindows() ? ".exe" : "";
+        var dnx = DnxResolver.Path;
+        if (dnx is null)
+            return [];
 
-        var globalToolDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".dotnet", "tools");
-        var localToolDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FieldCure", "AssistStudio", "tools");
-
-        var entries = new List<McpServerEntry>();
-
-        foreach (var (name, command, args, envKeys) in StatelessServers)
+        var entries = new List<McpServerEntry>(StatelessServers.Length);
+        foreach (var server in StatelessServers)
         {
-            var exeName = command + ext;
-            var localPath = Path.Combine(localToolDir, exeName);
-            var globalPath = Path.Combine(globalToolDir, exeName);
-
-            // Resolve to full path so exec mode works without PATH
-            string? resolvedCommand = File.Exists(localPath) ? localPath
-                : File.Exists(globalPath) ? globalPath
-                : null;
-
-            if (resolvedCommand is not null)
+            entries.Add(new McpServerEntry
             {
-                entries.Add(new McpServerEntry
-                {
-                    Name = name,
-                    Command = resolvedCommand,
-                    Args = [.. args],
-                    IsBuiltIn = true,
-                    EnvironmentVariableKeys = envKeys.Length > 0 ? [.. envKeys] : null,
-                });
-            }
+                Name = server.Name,
+                Command = dnx,
+                Args = [$"{server.PackageId}@{server.MajorRange}", "--yes"],
+                IsBuiltIn = true,
+                EnvironmentVariableKeys = server.EnvKeys.Length > 0 ? [.. server.EnvKeys] : null,
+            });
         }
 
         return entries;
     }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="name"/> matches a
+    /// known stateless server. Used by callers that need to decide whether to
+    /// auto-resolve a stale or LLM-provided command for the server.
+    /// </summary>
+    internal static bool IsKnownStatelessServer(string name)
+    {
+        foreach (var server in StatelessServers)
+        {
+            if (server.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Definition of a stateless MCP server Runner can auto-bootstrap. Bundles
+    /// the package id with its pinned major range so the spawn command line is
+    /// stable across NuGet releases (within the major) and explicit at major bumps.
+    /// </summary>
+    /// <param name="Name">Logical server name used as the merge key in <c>runner.json</c>.</param>
+    /// <param name="PackageId">NuGet package id consumed by <c>dnx</c>.</param>
+    /// <param name="MajorRange">Pinned major version range (e.g. <c>"2.*"</c>); bump intentionally on major releases.</param>
+    /// <param name="EnvKeys">Environment variable keys the server reads at startup.</param>
+    sealed record StatelessServerEntry(string Name, string PackageId, string MajorRange, string[] EnvKeys);
 
     /// <summary>
     /// Saves configuration to the specified directory's runner.json.

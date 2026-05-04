@@ -191,6 +191,13 @@ Cron expressions are automatically mapped to Windows Task Scheduler entries:
 Scheduled tasks are created with `schtasks /IT`, so they run in the interactive
 user context and require the user to be logged in at trigger time.
 
+The schtasks command line uses `dnx` (NuGet's npx-equivalent, .NET 10+) to
+fetch and run the worker — `dnx FieldCure.AssistStudio.Runner@<major>.* --yes exec <id>`.
+Stateless MCP servers consumed by the worker (Essentials, Outbox) are spawned
+the same way, pinned at their current major range. Set `RunnerConfig.ToolPath`
+to override with a concrete executable when an offline-from-NuGet workflow is
+required.
+
 ## Data Storage
 
 | Data | Location |
