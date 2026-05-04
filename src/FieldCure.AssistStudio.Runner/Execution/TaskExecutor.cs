@@ -143,7 +143,7 @@ public sealed class TaskExecutor
                 executionLog.Rounds = BuildRoundLogs(loopResult.Messages);
 
             // ── Phase 5: Notify ─────────────────────────────────────────
-            await TryNotifyAsync(task, execution, pool);
+            await TryNotifyAsync(task, execution, pool, loopResult.Messages);
         }
         catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
         {
@@ -194,6 +194,27 @@ public sealed class TaskExecutor
             ? string.Join(", ", actualTools)
             : "No tools are available.";
 
+        // When OutputChannel is configured the framework auto-sends the final
+        // summary after the loop ends; if the model also calls send_message
+        // for the same channel mid-loop the user gets duplicate messages.
+        // Tell the model to stop short of the send and let the framework do it.
+        var deliverySection = string.IsNullOrEmpty(task.OutputChannel)
+            ? """
+
+              DELIVERY:
+              - No output channel is configured. If the task requires sending a message,
+                call the appropriate output tool (e.g. send_message) explicitly.
+              """
+            : $"""
+
+              DELIVERY:
+              - Output channel '{task.OutputChannel}' is configured. The framework will
+                automatically send your final response to that channel after this loop ends.
+              - Do NOT call send_message (or any equivalent output tool) for that channel —
+                your final summary will be delivered automatically. Just produce the summary
+                and end the loop.
+              """;
+
         return $"""
             You are an autonomous task executor running in headless mode.
             There is no human in the loop — execute the task to completion.
@@ -210,13 +231,17 @@ public sealed class TaskExecutor
 
             EXIT CONDITIONS — when to stop searching and act:
             - Gather information in at most 2-3 searches. Do NOT re-verify data you already have.
-            - Once you have sufficient data to answer the task, call the output tool
-              (e.g. send_message, send_to_kakaotalk) IMMEDIATELY without further searches.
+            - Once you have sufficient data, finalize your response IMMEDIATELY without further searches.
             - If uncertain between two data points, use the first reliable one and note the
               uncertainty in your message. Do not loop trying to resolve it.
             - Prefer action over perfection. A good answer sent is better than a perfect
               answer never sent.
 
+            FAILURE HANDLING:
+            - If a tool call fails, do NOT retry more than once.
+            - On unrecoverable failure, finalize immediately with the error reason in your final
+              response. Do not exhaust your round budget retrying.
+            {deliverySection}
             FINALIZE:
             - When the task is complete, respond with a concise summary.
             - If you cannot complete the task, explain why in your final response.
@@ -226,11 +251,28 @@ public sealed class TaskExecutor
     }
 
     /// <summary>Sends a notification via the task's output channel, with fallback on failure.</summary>
-    async Task TryNotifyAsync(RunnerTask task, TaskExecution execution, McpServerPool pool)
+    async Task TryNotifyAsync(
+        RunnerTask task,
+        TaskExecution execution,
+        McpServerPool pool,
+        IReadOnlyList<ChatMessage>? loopMessages)
     {
         if (string.IsNullOrEmpty(task.OutputChannel))
         {
             execution.NotificationStatus = "skipped";
+            return;
+        }
+
+        // Skip the framework auto-send when the LLM already delivered to the same
+        // channel mid-loop. The system prompt now tells the model not to do this,
+        // but legacy tasks (and stubborn models) can still call send_message —
+        // detection here avoids duplicate KakaoTalk/Slack/Email messages either way.
+        if (LlmAlreadySentToChannel(loopMessages, task.OutputChannel))
+        {
+            execution.NotificationStatus = "skipped (llm sent)";
+            _logger.LogInformation(
+                "Skipping framework notification — LLM already sent to channel '{Channel}'",
+                task.OutputChannel);
             return;
         }
 
@@ -311,6 +353,39 @@ public sealed class TaskExecutor
         {
             _logger.LogWarning(ex, "Error cleaning old logs");
         }
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when any assistant message in the loop
+    /// invoked <c>send_message</c> with arguments referencing the supplied
+    /// output channel. Used to suppress the framework's auto-notification when
+    /// the LLM already delivered to the same channel mid-loop. Substring match
+    /// against the raw arguments JSON is sufficient — the channel name appears
+    /// as a literal value (e.g. <c>"channel": "kakaotalk_1"</c>) and false
+    /// positives would only fire when the channel name happens to appear in
+    /// the message body, which is rare and not catastrophic (skipping a
+    /// duplicate notification is the safer failure mode).
+    /// </summary>
+    static bool LlmAlreadySentToChannel(IReadOnlyList<ChatMessage>? messages, string outputChannel)
+    {
+        if (messages is null || string.IsNullOrEmpty(outputChannel))
+            return false;
+
+        foreach (var msg in messages)
+        {
+            if (msg.ToolCalls is null) continue;
+
+            foreach (var tc in msg.ToolCalls)
+            {
+                if (tc.FunctionName == "send_message"
+                    && tc.Arguments.Contains(outputChannel, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
