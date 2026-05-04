@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v2.0.2: Stops scheduled tasks from over-iterating. The headless system prompt now spells out explicit exit conditions (cap searches at 2-3, do not re-verify data already gathered, send the output as soon as you have enough, prefer action over perfection) so models stop looping on data verification before they have spent the round budget. Default MaxRounds raised 10 -> 20 to cover a typical search + summarize + send workflow. CreateTaskTool's max_rounds description now guides callers (10 simple, 20 search+send, 30+ multi-step research). create_task and update_task prompt descriptions now rule out scheduling-time pre-fetch — workers must gather data AT execution time, not embed pre-fetched data in the prompt. Includes the version sync miss from v2.0.1: .mcp/server.json now matches the csproj Version (was stuck at 2.0.0).</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.3: Stops duplicate output-channel deliveries. End-to-end testing of v2.0.2 surfaced a redundancy bug — when output_channel is configured, the framework auto-sends the final summary AND the LLM also called send_message mid-loop, so users got two messages on KakaoTalk/Slack/Email. Two-layer fix: (1) the headless system prompt now declares the configured output_channel by name and instructs the model not to call send_message for it, since the framework will deliver the final response automatically; failure handling is now explicit (do not retry tool calls more than once, finalize immediately on unrecoverable failure with the error reason in the final response, do not exhaust the round budget retrying); (2) TaskExecutor.TryNotifyAsync inspects the loop's tool-call history and skips the auto-send when the LLM already invoked send_message against the same channel — defence-in-depth against legacy tasks and stubborn models that ignore the prompt guidance.</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>

@@ -1,5 +1,53 @@
 ﻿# Release Notes
 
+## v2.0.3 (2026-05-04)
+
+### Fix — Stop duplicate output-channel deliveries
+
+End-to-end testing of v2.0.2 surfaced a redundancy: when `output_channel`
+is configured, the framework's `TryNotifyAsync` auto-sends the final
+summary at the end of the loop AND the LLM also calls `send_message`
+mid-loop with the same channel. Users on KakaoTalk/Slack/Email saw two
+messages — the structured payload from the model, then a redundant
+"task completed" summary from the framework.
+
+The fix is two layers — prompt guidance for normal behaviour and
+detection-based suppression for defence in depth:
+
+- **System prompt declares the configured channel by name.**
+  `BuildSystemPrompt` now branches on `task.OutputChannel`. When set,
+  the prompt names it explicitly: *"Output channel 'kakaotalk_1' is
+  configured. The framework will automatically send your final response
+  to that channel after this loop ends. Do NOT call send_message (or
+  any equivalent output tool) for that channel — your final summary
+  will be delivered automatically. Just produce the summary and end the
+  loop."* When no channel is configured the prompt instead instructs
+  the model to call the appropriate output tool explicitly.
+
+- **Failure handling is now explicit.** Models occasionally chewed
+  through the round budget retrying a transient tool failure. New rules:
+  *"If a tool call fails, do NOT retry more than once. On unrecoverable
+  failure, finalize immediately with the error reason in your final
+  response. Do not exhaust your round budget retrying."*
+
+- **`TryNotifyAsync` inspects the loop's tool-call history.** A new
+  helper `LlmAlreadySentToChannel` scans `loopResult.Messages` for any
+  `send_message` invocation whose arguments JSON contains the configured
+  channel name; when found, the framework auto-send is skipped and
+  `NotificationStatus` records `"skipped (llm sent)"`. Catches legacy
+  tasks and stubborn models that ignore the prompt guidance, so the
+  duplicate-message failure mode cannot survive a single side.
+
+### Notes
+
+- The `EXIT CONDITIONS` block from v2.0.2 is preserved; this release
+  reframes "call the output tool" to a generic "finalize your response"
+  so it composes cleanly with the new `DELIVERY` section.
+- Substring match is sufficient for channel detection — false positives
+  only fire when the channel name happens to appear in the message body,
+  which is rare and only causes a *missed* notification (the model
+  already sent it). Skipping a duplicate is the safer failure mode.
+
 ## v2.0.2 (2026-05-04)
 
 ### Fix — Stop scheduled tasks from over-iterating
