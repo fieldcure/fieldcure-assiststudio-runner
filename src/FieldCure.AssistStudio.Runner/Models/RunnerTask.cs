@@ -65,8 +65,13 @@ public sealed class RunnerTask
 /// </summary>
 public sealed class TaskGuardrails
 {
-    /// <summary>Maximum number of LLM interaction rounds.</summary>
-    public int MaxRounds { get; set; } = 10;
+    /// <summary>
+    /// Maximum number of LLM interaction rounds. Default 20 covers a typical
+    /// search + summarize + send workflow (2-3 searches, 1-2 fetches, optional
+    /// JS calc, final tool call). Raise for multi-step research, lower for
+    /// single-tool actions.
+    /// </summary>
+    public int MaxRounds { get; set; } = 20;
 
     /// <summary>Execution timeout in seconds.</summary>
     public int TimeoutSeconds { get; set; } = 300;

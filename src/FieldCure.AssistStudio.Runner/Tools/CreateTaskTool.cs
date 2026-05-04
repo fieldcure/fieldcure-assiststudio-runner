@@ -31,7 +31,12 @@ public static class CreateTaskTool
         ICredentialService credentials,
         [Description("Human-readable name for the task")]
         string name,
-        [Description("Natural language workflow prompt")]
+        [Description(
+            "Natural language workflow prompt. " +
+            "Describe what the worker should do AT execution time. " +
+            "All data gathering (search, fetch, calculate) must happen at execution time — never pre-fetch at scheduling time. " +
+            "Good: \"Search KOSPI 200 and send result via KakaoTalk\" | " +
+            "Bad: \"Send this search result: [data gathered now]\"")]
         string prompt,
         [Description("MCP server configurations as JSON array. Only provide id and name — do NOT include command or arguments, Runner resolves paths automatically. Example: [{\"id\": \"outbox\", \"name\": \"Outbox\"}]")]
         string mcp_servers,
@@ -41,7 +46,9 @@ public static class CreateTaskTool
         string? schedule = null,
         [Description("ISO 8601 datetime for one-time execution (e.g. '2026-04-07T15:30:00+09:00'). Use for relative time requests like 'in N minutes/hours', 'today', 'tomorrow'. Mutually exclusive with schedule.")]
         string? schedule_once = null,
-        [Description("Maximum LLM interaction rounds (default: 10)")]
+        [Description("Maximum agent loop iterations (default: 20). " +
+            "Use 10 for simple single-tool tasks, 20 for search+summarize+send workflows, " +
+            "30+ for complex multi-step research.")]
         int? max_rounds = null,
         [Description("Execution timeout in seconds (default: 300)")]
         int? timeout_seconds = null,
@@ -122,7 +129,7 @@ public static class CreateTaskTool
                 IsEnabled = true,
                 Guardrails = new TaskGuardrails
                 {
-                    MaxRounds = max_rounds ?? 10,
+                    MaxRounds = max_rounds ?? 20,
                     TimeoutSeconds = timeout_seconds ?? 300,
                     AllowedTools = tools,
                 },

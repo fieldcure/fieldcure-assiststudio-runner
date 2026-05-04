@@ -206,10 +206,22 @@ public sealed class TaskExecutor
 
             RULES:
             - Use only the tools provided. Do not ask for human input.
+            - You have a maximum of {task.Guardrails.MaxRounds} rounds — budget them deliberately.
+
+            EXIT CONDITIONS — when to stop searching and act:
+            - Gather information in at most 2-3 searches. Do NOT re-verify data you already have.
+            - Once you have sufficient data to answer the task, call the output tool
+              (e.g. send_message, send_to_kakaotalk) IMMEDIATELY without further searches.
+            - If uncertain between two data points, use the first reliable one and note the
+              uncertainty in your message. Do not loop trying to resolve it.
+            - Prefer action over perfection. A good answer sent is better than a perfect
+              answer never sent.
+
+            FINALIZE:
             - When the task is complete, respond with a concise summary.
             - If you cannot complete the task, explain why in your final response.
-            - You have a maximum of {task.Guardrails.MaxRounds} rounds.
-            - Available tools: {toolsInfo}
+
+            Available tools: {toolsInfo}
             """;
     }
 

@@ -30,7 +30,10 @@ public static class UpdateTaskTool
         string task_id,
         [Description("New task name")]
         string? name = null,
-        [Description("New workflow prompt")]
+        [Description(
+            "New workflow prompt. " +
+            "Describe what the worker should do AT execution time. " +
+            "All data gathering (search, fetch, calculate) must happen at execution time — never pre-fetch at scheduling time.")]
         string? prompt = null,
         [Description("New description")]
         string? description = null,
