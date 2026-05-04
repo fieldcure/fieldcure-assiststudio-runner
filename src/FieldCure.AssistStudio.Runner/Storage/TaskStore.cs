@@ -68,7 +68,7 @@ public sealed class TaskStore : IDisposable
                 MaxRounds       INTEGER NOT NULL DEFAULT 10,
                 TimeoutSeconds  INTEGER NOT NULL DEFAULT 300,
                 AllowedTools    TEXT,
-                PresetName      TEXT,
+                ModelName       TEXT,
                 McpServers      TEXT NOT NULL,
                 OutputChannel   TEXT,
                 CreatedAt       TEXT NOT NULL DEFAULT (datetime('now')),
@@ -111,6 +111,21 @@ public sealed class TaskStore : IDisposable
             migCmd.ExecuteNonQuery();
         }
         catch (SqliteException) { /* column already exists */ }
+
+        // Migration: rename PresetName → ModelName (v2.0.0). The CREATE TABLE
+        // above used `IF NOT EXISTS`, so a pre-2.0 runner.db keeps the legacy
+        // `PresetName` column while v2.0 INSERT/UPDATE statements reference
+        // `ModelName`. ALTER TABLE RENAME COLUMN (SQLite 3.25+) brings the
+        // column up to date in place; on a fresh DB the column was created
+        // with the new name and this ALTER throws "no such column" which we
+        // swallow as the no-op case.
+        try
+        {
+            using var migCmd = conn.CreateCommand();
+            migCmd.CommandText = "ALTER TABLE Tasks RENAME COLUMN PresetName TO ModelName;";
+            migCmd.ExecuteNonQuery();
+        }
+        catch (SqliteException) { /* already renamed (fresh DB) */ }
     }
 
     /// <summary>Opens a new SQLite connection with foreign keys enabled.</summary>
@@ -174,10 +189,10 @@ public sealed class TaskStore : IDisposable
         using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO Tasks (Id, Name, Description, Prompt, Schedule, ScheduleOnce, IsEnabled,
-                MaxRounds, TimeoutSeconds, AllowedTools, PresetName, McpServers, OutputChannel,
+                MaxRounds, TimeoutSeconds, AllowedTools, ModelName, McpServers, OutputChannel,
                 ExcludeDefaultServers, CreatedAt, UpdatedAt)
             VALUES (@id, @name, @desc, @prompt, @schedule, @scheduleOnce, @enabled,
-                @maxRounds, @timeout, @allowedTools, @preset, @mcpServers, @outputChannel,
+                @maxRounds, @timeout, @allowedTools, @model, @mcpServers, @outputChannel,
                 @excludeDefaults, @created, @updated)
             """;
 
@@ -195,7 +210,7 @@ public sealed class TaskStore : IDisposable
             task.Guardrails.AllowedTools is not null
                 ? JsonSerializer.Serialize(task.Guardrails.AllowedTools, JsonOptions)
                 : DBNull.Value);
-        cmd.Parameters.AddWithValue("@preset", (object?)task.PresetName ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@model", (object?)task.ModelName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@mcpServers", JsonSerializer.Serialize(task.McpServers, JsonOptions));
         cmd.Parameters.AddWithValue("@outputChannel", (object?)task.OutputChannel ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@excludeDefaults", task.ExcludeDefaultServers ? 1 : 0);
@@ -215,7 +230,7 @@ public sealed class TaskStore : IDisposable
                 Name = @name, Description = @desc, Prompt = @prompt, Schedule = @schedule,
                 ScheduleOnce = @scheduleOnce,
                 IsEnabled = @enabled, MaxRounds = @maxRounds, TimeoutSeconds = @timeout,
-                AllowedTools = @allowedTools, PresetName = @preset, McpServers = @mcpServers,
+                AllowedTools = @allowedTools, ModelName = @model, McpServers = @mcpServers,
                 OutputChannel = @outputChannel, ExcludeDefaultServers = @excludeDefaults,
                 UpdatedAt = @updated
             WHERE Id = @id
@@ -235,7 +250,7 @@ public sealed class TaskStore : IDisposable
             task.Guardrails.AllowedTools is not null
                 ? JsonSerializer.Serialize(task.Guardrails.AllowedTools, JsonOptions)
                 : DBNull.Value);
-        cmd.Parameters.AddWithValue("@preset", (object?)task.PresetName ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@model", (object?)task.ModelName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@mcpServers", JsonSerializer.Serialize(task.McpServers, JsonOptions));
         cmd.Parameters.AddWithValue("@outputChannel", (object?)task.OutputChannel ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@excludeDefaults", task.ExcludeDefaultServers ? 1 : 0);
@@ -444,8 +459,8 @@ public sealed class TaskStore : IDisposable
                     ? JsonSerializer.Deserialize<List<string>>(allowedToolsJson, JsonOptions)
                     : null,
             },
-            PresetName = reader.IsDBNull(reader.GetOrdinal("PresetName"))
-                ? null : reader.GetString(reader.GetOrdinal("PresetName")),
+            ModelName = reader.IsDBNull(reader.GetOrdinal("ModelName"))
+                ? null : reader.GetString(reader.GetOrdinal("ModelName")),
             McpServers = JsonSerializer.Deserialize<List<McpServerConfig>>(mcpServersJson, JsonOptions) ?? [],
             ExcludeDefaultServers = !reader.IsDBNull(reader.GetOrdinal("ExcludeDefaultServers"))
                 && reader.GetInt32(reader.GetOrdinal("ExcludeDefaultServers")) != 0,

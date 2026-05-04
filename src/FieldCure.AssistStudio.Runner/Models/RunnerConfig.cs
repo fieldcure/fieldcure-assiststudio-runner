@@ -1,4 +1,4 @@
-﻿using FieldCure.Ai.Providers.Models;
+using FieldCure.Ai.Providers.Models;
 using FieldCure.AssistStudio.Runner.Credentials;
 using System.Runtime.Versioning;
 using System.Text.Json;
@@ -19,11 +19,11 @@ public sealed class RunnerConfig
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>Fallback provider preset name when a task doesn't specify one.</summary>
-    public string? DefaultPresetName { get; set; }
+    /// <summary>Fallback provider model name when a task doesn't specify one.</summary>
+    public string? DefaultModelName { get; set; }
 
-    /// <summary>Provider preset definitions.</summary>
-    public Dictionary<string, PresetConfig> Presets { get; set; } = new();
+    /// <summary>Provider model definitions.</summary>
+    public Dictionary<string, ModelConfig> Models { get; set; } = new();
 
     /// <summary>Runner executable path override. Null = use PATH.</summary>
     public string? ToolPath { get; set; }
@@ -47,28 +47,28 @@ public sealed class RunnerConfig
     public List<McpServerEntry> DefaultMcpServers { get; set; } = [];
 
     /// <summary>
-    /// Resolves a preset name to a <see cref="ProviderPreset"/> instance.
+    /// Resolves a model name to a <see cref="ProviderModel"/> instance.
     /// Falls back to matching by provider type if exact name match fails.
     /// </summary>
-    public ProviderPreset? ResolvePreset(string? presetName)
+    public ProviderModel? ResolveModel(string? modelName)
     {
-        if (presetName is null) return null;
+        if (modelName is null) return null;
 
-        // 1. Exact match by preset name
-        if (Presets.TryGetValue(presetName, out var config))
-            return ToPreset(presetName, config);
+        // 1. Exact match by model name
+        if (Models.TryGetValue(modelName, out var config))
+            return ToProviderModel(modelName, config);
 
-        // 2. Fallback: match by providerType (e.g., "Claude" matches a preset with ProviderType="Claude")
-        var byType = Presets.FirstOrDefault(p =>
-            p.Value.ProviderType.Equals(presetName, StringComparison.OrdinalIgnoreCase));
+        // 2. Fallback: match by providerType (e.g., "Claude" matches a model with ProviderType="Claude")
+        var byType = Models.FirstOrDefault(p =>
+            p.Value.ProviderType.Equals(modelName, StringComparison.OrdinalIgnoreCase));
         if (byType.Value is not null)
-            return ToPreset(byType.Key, byType.Value);
+            return ToProviderModel(byType.Key, byType.Value);
 
         return null;
     }
 
-    /// <summary>Converts a <see cref="PresetConfig"/> to a <see cref="ProviderPreset"/> instance.</summary>
-    static ProviderPreset ToPreset(string name, PresetConfig config) => new()
+    /// <summary>Converts a <see cref="ModelConfig"/> to a <see cref="ProviderModel"/> instance.</summary>
+    static ProviderModel ToProviderModel(string name, ModelConfig config) => new()
     {
         Name = name,
         ProviderType = config.ProviderType,
@@ -99,6 +99,12 @@ public sealed class RunnerConfig
     /// Loads configuration from the specified directory's runner.json.
     /// Returns default config if the file doesn't exist.
     /// </summary>
+    /// <remarks>
+    /// 2.0 is a hard cutover from "preset" to "model" terminology — pre-2.0
+    /// runner.json files (with <c>defaultPresetName</c> / <c>presets</c>) are
+    /// not migrated. Delete the file before upgrading and let
+    /// <see cref="BuildFromVault"/> regenerate it.
+    /// </remarks>
     public static RunnerConfig Load(string? dataDirectory = null)
     {
         var dir = dataDirectory ?? GetDefaultDataDirectory();
@@ -114,7 +120,7 @@ public sealed class RunnerConfig
     /// <summary>
     /// Known cloud providers with default model IDs.
     /// These are used only for auto-config when no runner.json exists.
-    /// Users can override model IDs in their runner.json presets.
+    /// Users can override model IDs in their runner.json models.
     /// </summary>
     /// <remarks>
     /// Last updated: 2025-05. Update these when major new models are released.
@@ -129,7 +135,7 @@ public sealed class RunnerConfig
 
     /// <summary>
     /// Builds a config by scanning Windows Credential Manager for known provider API keys.
-    /// Creates presets for each provider with a stored key, plus Ollama (no key required).
+    /// Creates models for each provider with a stored key, plus Ollama (no key required).
     /// </summary>
     [SupportedOSPlatform("windows")]
     public static RunnerConfig BuildFromVault()
@@ -138,21 +144,21 @@ public sealed class RunnerConfig
         var credService = new CredentialService();
         var userNames = new HashSet<string>(credService.EnumerateUserNames());
 
-        foreach (var (type, model) in KnownProviders)
+        foreach (var (type, modelId) in KnownProviders)
         {
             if (userNames.Contains(type))
             {
-                config.Presets[type] = new PresetConfig
+                config.Models[type] = new ModelConfig
                 {
                     ProviderType = type,
-                    ModelId = model,
+                    ModelId = modelId,
                 };
-                config.DefaultPresetName ??= type;
+                config.DefaultModelName ??= type;
             }
         }
 
         // Ollama — no API key required, always available
-        config.Presets["Ollama"] = new PresetConfig
+        config.Models["Ollama"] = new ModelConfig
         {
             ProviderType = "Ollama",
             ModelId = "llama3.1:latest",
@@ -245,9 +251,12 @@ public sealed class RunnerConfig
 }
 
 /// <summary>
-/// Provider preset configuration stored in runner.json.
+/// Provider model configuration stored in runner.json.
+/// Renamed from <c>PresetConfig</c> in 2.0 to align with the
+/// upstream <c>FieldCure.Ai.Providers</c> rename of <c>ProviderPreset</c>
+/// to <c>ProviderModel</c>.
 /// </summary>
-public sealed class PresetConfig
+public sealed class ModelConfig
 {
     /// <summary>Provider type: "Claude", "OpenAI", "Gemini", "Ollama", "Groq".</summary>
     public string ProviderType { get; set; } = "Claude";

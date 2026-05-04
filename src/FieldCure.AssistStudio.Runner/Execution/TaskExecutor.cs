@@ -89,18 +89,18 @@ public sealed class TaskExecutor
         try
         {
             // Resolve provider
-            var presetName = task.PresetName ?? _globalConfig.DefaultPresetName;
-            if (presetName is null)
-                throw new InvalidOperationException("No preset configured. Set task PresetName or runner.json defaultPresetName.");
+            var modelName = task.ModelName ?? _globalConfig.DefaultModelName;
+            if (modelName is null)
+                throw new InvalidOperationException("No model configured. Set task ModelName or runner.json defaultModelName.");
 
-            var preset = _globalConfig.ResolvePreset(presetName)
-                ?? throw new InvalidOperationException($"Preset '{presetName}' not found in runner.json.");
+            var providerModel = _globalConfig.ResolveModel(modelName)
+                ?? throw new InvalidOperationException($"Model '{modelName}' not found in runner.json.");
 
-            preset.ApiKey = _credentialService.GetApiKey(preset.ProviderType)
-                ?? throw new InvalidOperationException($"API key for provider '{preset.ProviderType}' not found in PasswordVault.");
+            providerModel.ApiKey = _credentialService.GetApiKey(providerModel.ProviderType)
+                ?? throw new InvalidOperationException($"API key for provider '{providerModel.ProviderType}' not found in PasswordVault.");
 
-            var provider = ProviderFactory.Create(preset);
-            _logger.LogDebug("Using provider {Provider} model {Model}", preset.ProviderType, preset.ModelId);
+            var provider = ProviderFactory.Create(providerModel);
+            _logger.LogDebug("Using provider {Provider} model {Model}", providerModel.ProviderType, providerModel.ModelId);
 
             // ── Phase 2: Bootstrap MCP Servers ───────────────────────────
             pool = new McpServerPool(_logger);
@@ -118,8 +118,8 @@ public sealed class TaskExecutor
                 UserPrompt = task.Prompt,
                 Tools = tools.Cast<IAssistTool>().ToList(),
                 MaxRounds = task.Guardrails.MaxRounds,
-                Temperature = preset.Temperature,
-                MaxTokens = preset.MaxTokens,
+                Temperature = providerModel.Temperature,
+                MaxTokens = providerModel.MaxTokens,
             };
 
             var loopResult = await agentLoop.RunAsync(loopContext, linkedCts.Token);

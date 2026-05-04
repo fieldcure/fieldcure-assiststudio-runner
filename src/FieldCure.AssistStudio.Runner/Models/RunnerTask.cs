@@ -30,10 +30,11 @@ public sealed class RunnerTask
     public required TaskGuardrails Guardrails { get; set; }
 
     /// <summary>
-    /// ProviderPreset name. Null falls back to runner.json default.
-    /// API key is resolved from PasswordVault using this name.
+    /// ProviderModel name (renamed from <c>PresetName</c> in 2.0). Null falls
+    /// back to runner.json default. API key is resolved from PasswordVault
+    /// using this name.
     /// </summary>
-    public string? PresetName { get; set; }
+    public string? ModelName { get; set; }
 
     /// <summary>
     /// MCP servers to bootstrap for this task's execution.

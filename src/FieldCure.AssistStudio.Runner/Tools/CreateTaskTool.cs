@@ -47,8 +47,8 @@ public static class CreateTaskTool
         int? timeout_seconds = null,
         [Description("Tool names the LLM may invoke (JSON array). Null = no tools allowed.")]
         string? allowed_tools = null,
-        [Description("Provider preset name. Null = use global default.")]
-        string? preset_name = null,
+        [Description("Provider model name. Null = use global default.")]
+        string? model_name = null,
         [Description("Outbox channel name for result notification")]
         string? output_channel = null,
         [Description("When true, default MCP servers from runner.json are not included. Default: false.")]
@@ -105,10 +105,10 @@ public static class CreateTaskTool
                 scheduleOnceValue = parsed;
             }
 
-            // Check preset API key (warning only)
-            string? presetWarning = null;
-            if (preset_name is not null && credentials.GetApiKey(preset_name) is null)
-                presetWarning = $"Warning: API key for preset '{preset_name}' not found in PasswordVault.";
+            // Check provider model API key (warning only)
+            string? modelWarning = null;
+            if (model_name is not null && credentials.GetApiKey(model_name) is null)
+                modelWarning = $"Warning: API key for model '{model_name}' not found in PasswordVault.";
 
             var now = DateTimeOffset.UtcNow;
             var task = new RunnerTask
@@ -126,7 +126,7 @@ public static class CreateTaskTool
                     TimeoutSeconds = timeout_seconds ?? 300,
                     AllowedTools = tools,
                 },
-                PresetName = preset_name,
+                ModelName = model_name,
                 McpServers = servers,
                 ExcludeDefaultServers = exclude_default_servers ?? false,
                 OutputChannel = output_channel,
@@ -153,8 +153,8 @@ public static class CreateTaskTool
                 summary += $" Scheduled: {scheduleDesc}";
             else if (scheduleDesc is not null && !scheduleRegistered)
                 summary += $" Schedule registration failed: {scheduleError}";
-            if (presetWarning is not null)
-                summary += $" {presetWarning}";
+            if (modelWarning is not null)
+                summary += $" {modelWarning}";
 
             return JsonSerializer.Serialize(new
             {

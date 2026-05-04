@@ -46,8 +46,8 @@ public static class UpdateTaskTool
         int? timeout_seconds = null,
         [Description("New allowed tools (JSON array). Use 'null' string to clear.")]
         string? allowed_tools = null,
-        [Description("New provider preset name")]
-        string? preset_name = null,
+        [Description("New provider model name")]
+        string? model_name = null,
         [Description("New MCP servers as JSON array. Only provide id and name — do NOT include command or arguments. Example: [{\"id\": \"outbox\", \"name\": \"Outbox\"}]")]
         string? mcp_servers = null,
         [Description("New output channel")]
@@ -130,7 +130,7 @@ public static class UpdateTaskTool
                 updatedFields.Add("allowed_tools");
             }
 
-            if (preset_name is not null) { task.PresetName = preset_name; updatedFields.Add("preset_name"); }
+            if (model_name is not null) { task.ModelName = model_name; updatedFields.Add("model_name"); }
             if (output_channel is not null) { task.OutputChannel = output_channel; updatedFields.Add("output_channel"); }
 
             if (mcp_servers is not null)

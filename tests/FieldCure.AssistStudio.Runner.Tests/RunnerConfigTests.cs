@@ -6,13 +6,13 @@ namespace FieldCure.AssistStudio.Runner.Tests;
 public class RunnerConfigTests
 {
     [TestMethod]
-    public void ResolvePreset_Found()
+    public void ResolveModel_Found()
     {
         var config = new RunnerConfig
         {
-            Presets = new()
+            Models = new()
             {
-                ["Claude"] = new PresetConfig
+                ["Claude"] = new ModelConfig
                 {
                     ProviderType = "Claude",
                     ModelId = "claude-sonnet-4-20250514",
@@ -22,27 +22,27 @@ public class RunnerConfigTests
             }
         };
 
-        var preset = config.ResolvePreset("Claude");
-        Assert.IsNotNull(preset);
-        Assert.AreEqual("Claude", preset.Name);
-        Assert.AreEqual("Claude", preset.ProviderType);
-        Assert.AreEqual("claude-sonnet-4-20250514", preset.ModelId);
-        Assert.AreEqual(0.5, preset.Temperature);
-        Assert.AreEqual(8192, preset.MaxTokens);
+        var providerModel = config.ResolveModel("Claude");
+        Assert.IsNotNull(providerModel);
+        Assert.AreEqual("Claude", providerModel.Name);
+        Assert.AreEqual("Claude", providerModel.ProviderType);
+        Assert.AreEqual("claude-sonnet-4-20250514", providerModel.ModelId);
+        Assert.AreEqual(0.5, providerModel.Temperature);
+        Assert.AreEqual(8192, providerModel.MaxTokens);
     }
 
     [TestMethod]
-    public void ResolvePreset_NotFound_ReturnsNull()
+    public void ResolveModel_NotFound_ReturnsNull()
     {
         var config = new RunnerConfig();
-        Assert.IsNull(config.ResolvePreset("Unknown"));
+        Assert.IsNull(config.ResolveModel("Unknown"));
     }
 
     [TestMethod]
-    public void ResolvePreset_Null_ReturnsNull()
+    public void ResolveModel_Null_ReturnsNull()
     {
         var config = new RunnerConfig();
-        Assert.IsNull(config.ResolvePreset(null));
+        Assert.IsNull(config.ResolveModel(null));
     }
 
     [TestMethod]
@@ -63,12 +63,12 @@ public class RunnerConfigTests
         {
             var config = new RunnerConfig
             {
-                DefaultPresetName = "Test Preset",
+                DefaultModelName = "Test Model",
                 LogRetentionDays = 7,
                 FallbackChannel = "test-alerts",
-                Presets = new()
+                Models = new()
                 {
-                    ["Test Preset"] = new PresetConfig
+                    ["Test Model"] = new ModelConfig
                     {
                         ProviderType = "OpenAI",
                         ModelId = "gpt-4o",
@@ -79,11 +79,11 @@ public class RunnerConfigTests
             config.Save(tempDir);
             var loaded = RunnerConfig.Load(tempDir);
 
-            Assert.AreEqual("Test Preset", loaded.DefaultPresetName);
+            Assert.AreEqual("Test Model", loaded.DefaultModelName);
             Assert.AreEqual(7, loaded.LogRetentionDays);
             Assert.AreEqual("test-alerts", loaded.FallbackChannel);
-            Assert.IsTrue(loaded.Presets.ContainsKey("Test Preset"));
-            Assert.AreEqual("OpenAI", loaded.Presets["Test Preset"].ProviderType);
+            Assert.IsTrue(loaded.Models.ContainsKey("Test Model"));
+            Assert.AreEqual("OpenAI", loaded.Models["Test Model"].ProviderType);
         }
         finally
         {

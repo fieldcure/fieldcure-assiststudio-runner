@@ -27,15 +27,15 @@ public static class ConfigRunner
     }
 
     /// <summary>
-    /// Creates runner.json with optional preset configuration.
+    /// Creates runner.json with optional model configuration.
     /// <code>
-    /// assiststudio-runner config init [--preset Name --provider Type --model Id] [--if-missing]
+    /// assiststudio-runner config init [--model-name Name --provider Type --model Id] [--if-missing]
     /// </code>
     /// </summary>
     static int RunInit(string[] args)
     {
-        var parsed = ParseArgs(args, "preset", "provider", "model", "if-missing");
-        var presetName = parsed.GetValueOrDefault("preset");
+        var parsed = ParseArgs(args, "model-name", "provider", "model", "if-missing");
+        var modelName = parsed.GetValueOrDefault("model-name");
         var providerType = parsed.GetValueOrDefault("provider");
         var modelId = parsed.GetValueOrDefault("model");
         var ifMissing = parsed.ContainsKey("if-missing");
@@ -51,15 +51,15 @@ public static class ConfigRunner
 
         RunnerConfig config;
 
-        if (!string.IsNullOrEmpty(presetName) && !string.IsNullOrEmpty(providerType))
+        if (!string.IsNullOrEmpty(modelName) && !string.IsNullOrEmpty(providerType))
         {
-            // Create config from provided preset info
+            // Create config from provided model info
             config = new RunnerConfig
             {
-                DefaultPresetName = presetName,
-                Presets = new()
+                DefaultModelName = modelName,
+                Models = new()
                 {
-                    [presetName] = new PresetConfig
+                    [modelName] = new ModelConfig
                     {
                         ProviderType = providerType,
                         ModelId = modelId,
@@ -72,10 +72,10 @@ public static class ConfigRunner
             // Default template
             config = new RunnerConfig
             {
-                DefaultPresetName = "Claude",
-                Presets = new()
+                DefaultModelName = "Claude",
+                Models = new()
                 {
-                    ["Claude"] = new PresetConfig
+                    ["Claude"] = new ModelConfig
                     {
                         ProviderType = "Claude",
                         ModelId = "claude-sonnet-4-20250514",
@@ -170,7 +170,7 @@ public static class ConfigRunner
     {
         Console.Error.WriteLine("Usage:");
         Console.Error.WriteLine("  assiststudio-runner config init [options]               Create runner.json");
-        Console.Error.WriteLine("    --preset <name>        Preset name (e.g., \"Claude\")");
+        Console.Error.WriteLine("    --model-name <name>    Model entry name (e.g., \"Claude\")");
         Console.Error.WriteLine("    --provider <type>      Provider type (Claude, OpenAI, Gemini, Groq, Ollama)");
         Console.Error.WriteLine("    --model <id>           Model identifier");
         Console.Error.WriteLine("    --if-missing           Skip if runner.json already exists");

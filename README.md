@@ -55,7 +55,7 @@ When launched in `serve` mode with no `runner.json`, Runner automatically scans 
 # Create runner.json config template
 assiststudio-runner config init
 
-# Set API key for a provider preset
+# Set API key for a provider model
 assiststudio-runner config set-credential "Claude" sk-ant-api03-...
 
 # Verify (displays masked value)
@@ -66,8 +66,8 @@ The config file is created at `%LOCALAPPDATA%/FieldCure/AssistStudio/Runner/runn
 
 ```json
 {
-  "defaultPresetName": "Claude",
-  "presets": {
+  "defaultModelName": "Claude",
+  "models": {
     "Claude": {
       "providerType": "Claude",
       "modelId": "claude-sonnet-4-20250514"

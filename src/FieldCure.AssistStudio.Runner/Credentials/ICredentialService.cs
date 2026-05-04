@@ -5,11 +5,11 @@ namespace FieldCure.AssistStudio.Runner.Credentials;
 /// </summary>
 public interface ICredentialService
 {
-    /// <summary>Retrieves the API key for a provider preset.</summary>
-    string? GetApiKey(string presetName);
+    /// <summary>Retrieves the API key for a provider model.</summary>
+    string? GetApiKey(string modelName);
 
-    /// <summary>Stores an API key for a provider preset.</summary>
-    void SetApiKey(string presetName, string apiKey);
+    /// <summary>Stores an API key for a provider model.</summary>
+    void SetApiKey(string modelName, string apiKey);
 
     /// <summary>Retrieves an MCP server environment variable value.</summary>
     string? GetMcpEnvVar(string serverId, string key);

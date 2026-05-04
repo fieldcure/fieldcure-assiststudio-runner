@@ -22,12 +22,12 @@ public sealed class CredentialService : ICredentialService
     const int CredPersistLocalMachine = 2;
 
     /// <inheritdoc />
-    public string? GetApiKey(string presetName) =>
-        RetrieveByUserName(presetName);
+    public string? GetApiKey(string modelName) =>
+        RetrieveByUserName(modelName);
 
     /// <inheritdoc />
-    public void SetApiKey(string presetName, string apiKey) =>
-        Store(presetName, apiKey);
+    public void SetApiKey(string modelName, string apiKey) =>
+        Store(modelName, apiKey);
 
     /// <inheritdoc />
     public string? GetMcpEnvVar(string serverId, string key) =>
