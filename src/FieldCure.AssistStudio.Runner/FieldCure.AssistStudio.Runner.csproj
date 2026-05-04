@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>1.4.0</Version>
+    <Version>2.0.0</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v1.4.0: Align auto-detected built-in server ids with the AssistStudio host (default_ → builtin_) so the shared McpEnv_{serverId}_{key} credential slot matches — scheduled tasks using Essentials now pick up SERPER_API_KEY, TAVILY_API_KEY, SERPAPI_API_KEY, and WOLFRAM_APPID entered in the host without any mirror step. Breaking for anything referencing the previous default_ ids in persisted runner.json or saved task rows.</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.0: Breaking — Preset → Model rename across the public surface, aligning Runner with the upstream rename in Ai.Providers 0.7.0 (ProviderPreset → ProviderModel) and AssistStudio.Core 0.19.0 (Profile.PreferredModelName). runner.json defaultPresetName/presets/PresetConfig → defaultModelName/models/ModelConfig; runner.db Tasks.PresetName → Tasks.ModelName (auto-migrated via ALTER TABLE RENAME COLUMN on first start, requires SQLite 3.25+); MCP create_task/update_task preset_name argument → model_name; CLI config init --preset → --model-name. Pre-2.0 runner.json files are silently regenerated from PasswordVault on first start (custom edits lost). Rebuilt against Ai.Providers 0.7.1 and Ai.Execution 0.4.1 (SubAgentRequest.ModelName / SubAgentResult.UsedModel).</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>

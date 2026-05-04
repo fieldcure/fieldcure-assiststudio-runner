@@ -1,5 +1,59 @@
 ﻿# Release Notes
 
+## v2.0.0 (2026-05-04)
+
+### Breaking — Preset → Model rename across the public surface
+
+Aligns Runner terminology with the upstream rename in
+**FieldCure.Ai.Providers 0.7.0** (`ProviderPreset` → `ProviderModel`) and
+**FieldCure.AssistStudio.Core 0.19.0** (`Profile.PreferredModelName`).
+
+| Surface | Before | After |
+|---|---|---|
+| `runner.json` | `defaultPresetName` | `defaultModelName` |
+| `runner.json` | `presets: { ... }` | `models: { ... }` |
+| `runner.json` | `PresetConfig` | `ModelConfig` |
+| `runner.db` Tasks column | `PresetName` | `ModelName` |
+| MCP `create_task` / `update_task` | `preset_name` argument | `model_name` argument |
+| CLI `config init` | `--preset <name>` | `--model-name <name>` |
+| `RunnerConfig` API | `DefaultPresetName`, `Presets`, `ResolvePreset` | `DefaultModelName`, `Models`, `ResolveModel` |
+| `RunnerTask` API | `PresetName` | `ModelName` |
+| `ICredentialService` | parameter `presetName` | parameter `modelName` (signature unchanged behaviourally) |
+
+### Migration
+
+- **`runner.db` is auto-migrated on first start.** `TaskStore.Initialize`
+  runs `ALTER TABLE Tasks RENAME COLUMN PresetName TO ModelName`
+  inside the existing migration block (idempotent — fresh databases
+  swallow the resulting "no such column" error). Existing task rows
+  survive intact. Requires SQLite 3.25+, which is the floor for the
+  bundled `Microsoft.Data.Sqlite` 8.x runtime.
+- **`runner.json` is silently regenerated.** Pre-2.0 files load with
+  empty `Models`, fall through to `BuildFromVault()`, and are
+  overwritten in the new shape. Custom edits in the old file
+  (`baseUrl`, `temperature`, `maxTokens` overrides, custom model ids)
+  are lost — copy them out before upgrading if you depend on them.
+- **MCP `preset_name` callers receive a clear error.** No alias is
+  wired; the tool router rejects unknown arguments. Update LLM
+  prompts and any wrapper scripts that hard-code `preset_name`.
+
+### Rebuilt against
+
+- `FieldCure.Ai.Providers` 0.7.1 (`ProviderModel`,
+  `ChatMessage.IsHidden` / `IsContinuation` / `IsTruncated`,
+  `ProviderModelBroadcast`, Gemini inline image output, audio
+  attachment scaffold)
+- `FieldCure.Ai.Execution` 0.4.1 (`SubAgentRequest.ModelName`,
+  `SubAgentResult.UsedModel`)
+
+### Internal
+
+- `docs/AssistStudio_Runner_v2.0_Spec.md` — the gitignored 2026-03-30
+  design draft was deleted from disk; the rename rationale lives in
+  this RELEASENOTES entry and the rename commit message.
+
+---
+
 ## v1.4.0 (2026-04-22)
 
 ### Changed
