@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v2.0.1: Completes the dnx migration on the Runner side. Drops the preference for tool-path-installed binaries under the retired %LOCALAPPDATA%\FieldCure\AssistStudio\tools\ folder (which AssistStudio stopped populating in mid-April), eliminating silent version-skew failures when stale binaries shadowed the dnx-cached current versions. WindowsTaskScheduler now spawns dnx directly for schtasks-fired exec workers. RunnerConfig.DetectInstalledServers uses dnx-based discovery; each stateless server (essentials, outbox) is pinned at its current major range so breaking changes never sneak in mid-cycle. RunnerConfig.Load auto-migrates pre-2.0.1 runner.json — any defaultMcpServers[].command pointing into the legacy tools/ folder is rewritten to the equivalent dnx command and saved back.</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.2: Stops scheduled tasks from over-iterating. The headless system prompt now spells out explicit exit conditions (cap searches at 2-3, do not re-verify data already gathered, send the output as soon as you have enough, prefer action over perfection) so models stop looping on data verification before they have spent the round budget. Default MaxRounds raised 10 -> 20 to cover a typical search + summarize + send workflow. CreateTaskTool's max_rounds description now guides callers (10 simple, 20 search+send, 30+ multi-step research). create_task and update_task prompt descriptions now rule out scheduling-time pre-fetch — workers must gather data AT execution time, not embed pre-fetched data in the prompt. Includes the version sync miss from v2.0.1: .mcp/server.json now matches the csproj Version (was stuck at 2.0.0).</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>

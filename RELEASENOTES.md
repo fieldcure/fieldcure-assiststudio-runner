@@ -1,5 +1,67 @@
 ﻿# Release Notes
 
+## v2.0.2 (2026-05-04)
+
+### Fix — Stop scheduled tasks from over-iterating
+
+End-to-end testing of v2.0.1 surfaced a behaviour bug independent of the
+dnx migration: a "search LG stock and send to KakaoTalk in 2 minutes"
+task burned all 10 rounds re-verifying data the LLM already had and
+never reached the `send_message` call. The Outbox fallback notification
+fired ("Task failed: Maximum rounds (10) reached"), so users saw a
+delivered message that announced the task's failure to deliver — the
+worst possible UX.
+
+The system prompt and round budget are tuned for the
+search → summarize → send shape:
+
+- **`TaskExecutor.BuildSystemPrompt` adds explicit exit conditions:**
+  - Cap information gathering at 2–3 searches; do NOT re-verify data
+    already collected.
+  - Once data is sufficient, call the output tool (e.g. `send_message`)
+    immediately without further searches.
+  - When two data points conflict, use the first reliable one and note
+    the uncertainty — do not loop trying to resolve it.
+  - "Prefer action over perfection. A good answer sent is better than a
+    perfect answer never sent."
+
+- **Default `MaxRounds` raised from 10 to 20.** A realistic
+  search + summarize + send workflow is 7–8 rounds (search × 2-3 +
+  fetch × 2-3 + JS calc × 1 + send × 1); 10 left no headroom for
+  retries or error recovery. Updates both
+  `RunnerTask.Guardrails.MaxRounds` (in-memory default) and
+  `CreateTaskTool` (`max_rounds ?? 20`). Existing rows in `runner.db`
+  keep their stored value — the change applies to new tasks only.
+
+- **`CreateTaskTool.max_rounds` description now guides callers**:
+  *"Maximum agent loop iterations (default: 20). Use 10 for simple
+  single-tool tasks, 20 for search+summarize+send workflows, 30+ for
+  complex multi-step research."* Tools-aware models pick a sensible
+  budget without being asked.
+
+- **`prompt` description rules out scheduling-time pre-fetch.** Models
+  occasionally embed data they gathered while *creating* the task into
+  the prompt, then have the worker "send" stale data at trigger time.
+  The new wording for both `create_task` and `update_task` is explicit:
+  *"Describe what the worker should do AT execution time. All data
+  gathering (search, fetch, calculate) must happen at execution time —
+  never pre-fetch at scheduling time."*
+
+### Fix — Sync `.mcp/server.json` version with csproj `<Version>`
+
+v2.0.1 shipped with `.mcp/server.json` still pinned at `2.0.0`. v2.0.2
+brings both the top-level and `packages[0].version` fields back in
+lockstep with the package version, and CLAUDE.md already calls this out
+as a release-time checklist item.
+
+### Notes
+
+- v2.0.0 / v2.0.1 are still on NuGet — older `runner.json` and `runner.db`
+  rows remain compatible. The behaviour fix is forward-looking only.
+- Round budget awareness (dynamic `[Round 8/20, remaining: 12]` injection
+  into the system prompt) is queued for v2.1+ — the static guidance and
+  raised default in v2.0.2 are sufficient for current workloads.
+
 ## v2.0.1 (2026-05-04)
 
 ### Fix — Retire the `%LOCALAPPDATA%\FieldCure\AssistStudio\tools\` install scheme
