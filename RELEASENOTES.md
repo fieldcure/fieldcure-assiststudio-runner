@@ -1,5 +1,17 @@
 ﻿# Release Notes
 
+## v2.0.4 (2026-05-25)
+
+### Internal
+
+- **Rebuilt against FieldCure.Ai.Providers 0.8.0** (`IToolContext` capability surface, `ElicitationFieldInfo` namespace move, `ChatMessage.StopReason` enum, `StructuredContent` plumbing, Gemini IMAGE modality, globally-unique Gemini `tool_call_id`s) and **FieldCure.Ai.Execution 0.4.1**, picked up automatically via the floating `Version="0.*"` reference in `FieldCure.AssistStudio.Runner.csproj`.
+- The Ai.Providers 0.8.0 **breaking changes are transparent to Runner**: `ElicitationFieldInfo` was renamespaced from `FieldCure.AssistStudio.Controls` to `FieldCure.Ai.Providers.Models`, and `ChatMessage.IsTruncated` setter was removed in favor of the new `StopReason` enum — Runner uses neither type directly, so AgentLoop and headless task execution are unaffected.
+- **Pack-time `VerifyServerJsonVersion` MSBuild target** catches drift between csproj `<Version>` and the two version fields in `.mcp/server.json` before producing a stale nupkg.
+- **`publish-mcp-registry.yml` GitHub Actions workflow** (manual `workflow_dispatch`) drives the MCP Server Registry update via GitHub OIDC. Run AFTER NuGet indexing because the registry validates the published nupkg README's `mcp-name` line.
+- No runtime behaviour changes in scheduled-task execution, output channel notification (Slack / Discord / Telegram / KakaoTalk / Microsoft / Gmail / SMTP / Email), Windows Task Scheduler interaction, or MCP protocol handling.
+
+---
+
 ## v2.0.3 (2026-05-04)
 
 ### Fix — Stop duplicate output-channel deliveries

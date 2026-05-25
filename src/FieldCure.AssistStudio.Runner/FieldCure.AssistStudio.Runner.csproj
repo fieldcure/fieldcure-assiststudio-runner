@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <PackageId>FieldCure.AssistStudio.Runner</PackageId>
@@ -24,7 +24,7 @@
     <PackageTags>mcp;mcp-server;ai;dotnet;llm;automation;scheduler;runner;task-scheduler</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageReleaseNotes>v2.0.3: Stops duplicate output-channel deliveries. End-to-end testing of v2.0.2 surfaced a redundancy bug — when output_channel is configured, the framework auto-sends the final summary AND the LLM also called send_message mid-loop, so users got two messages on KakaoTalk/Slack/Email. Two-layer fix: (1) the headless system prompt now declares the configured output_channel by name and instructs the model not to call send_message for it, since the framework will deliver the final response automatically; failure handling is now explicit (do not retry tool calls more than once, finalize immediately on unrecoverable failure with the error reason in the final response, do not exhaust the round budget retrying); (2) TaskExecutor.TryNotifyAsync inspects the loop's tool-call history and skips the auto-send when the LLM already invoked send_message against the same channel — defence-in-depth against legacy tasks and stubborn models that ignore the prompt guidance.</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.4: Rebuilt against FieldCure.Ai.Providers 0.8.0 (IToolContext + ElicitationFieldInfo namespace move + StopReason enum + StructuredContent plumbing + Gemini IMAGE modality + globally-unique Gemini tool_call_ids) and FieldCure.Ai.Execution 0.4.1, picked up automatically via the floating Version="0.*" reference. The Ai.Providers 0.8.0 breaking changes (ElicitationFieldInfo namespace move + ChatMessage.IsTruncated setter removal) are transparent to Runner — it does not use either type directly. Also includes pack-time VerifyServerJsonVersion MSBuild target (catches drift between csproj &lt;Version&gt; and .mcp/server.json) and publish-mcp-registry.yml GitHub Actions workflow (manual workflow_dispatch via OIDC). No runtime behaviour changes in scheduled-task execution, output channel notification, or MCP protocol handling.</PackageReleaseNotes>
 
     <PackageType>McpServer</PackageType>
     <PackAsTool>true</PackAsTool>
